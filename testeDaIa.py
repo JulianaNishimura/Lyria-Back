@@ -79,8 +79,7 @@ def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None):
         contexto_limitado = str(contexto_web)[:500]
         prompt_parts.append("Info web atual: " + contexto_limitado)
     prompt_parts.append("Pergunta atual: " + str(pergunta))
-    prompt = "
-".join(prompt_parts)
+    prompt = "".join(prompt_parts)
     resposta = chamar_hf_inference(prompt)
     return resposta
 

@@ -53,7 +53,7 @@ def conversar(usuario):
             contexto_web = buscar_na_web(pergunta)
         persona = get_persona_texto(persona_tipo)
         resposta = perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web)
-        salvarMensagem(usuario, pergunta, resposta, modelo_usado="ollama", tokens=None)
+        salvarMensagem(usuario, pergunta, resposta, modelo_usado="hf", tokens=None)
         return jsonify({"resposta": resposta})
         
     except Exception as e:
@@ -84,8 +84,8 @@ def set_persona_escolhida(usuario):
         return jsonify({"erro": "Campo 'persona' é obrigatório"}), 400
 
     persona = data['persona']
-    if persona not in ['professor', 'empresarial']:
-        return jsonify({"erro": "Persona inválida. Use 'professor' ou 'empresarial'"}), 400
+    if persona not in ['professor', 'empresarial', 'social']:
+        return jsonify({"erro": "Persona inválida. Use 'professor', 'empresarial' ou 'social'"}), 400
 
     try:
         escolherApersona(persona, usuario)
@@ -104,8 +104,8 @@ def criar_usuario_route():
     persona = data.get('persona', 'professor')
     senha_hash = data.get('senha_hash')
     
-    if persona not in ['professor', 'empresarial']:
-        return jsonify({"erro": "Persona inválida. Use 'professor' ou 'empresarial'"}), 400
+    if persona not in ['professor', 'empresarial', 'social']:
+        return jsonify({"erro": "Persona inválida. Use 'professor', 'empresarial' ou 'social'"}), 400
 
     try:
         usuario_id = criarUsuario(nome, email, persona, senha_hash)
@@ -247,6 +247,5 @@ def listar_personas():
         PRIORIDADE CRÍTICA: Informações da web ajudam a entender contextos sociais atuais.
         """
     }
-
     return jsonify({"personas": personas})
 
