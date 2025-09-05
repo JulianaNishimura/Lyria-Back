@@ -11,7 +11,7 @@ from banco.banco import (
     criar_banco
 )
 
-
+import json
 
 import json
 
@@ -35,18 +35,18 @@ def chamar_hf_inference(prompt, max_new_tokens=512, temperature=0.3, top_p=0.95)
         }
     }
     try:
-        resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, data=json.dumps(payload), timeout=60)
+        # Aumentando o timeout para 120 segundos
+        resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, data=json.dumps(payload), timeout=120)
+        
         if resp.status_code == 503:
-            # Modelo aquecendo; tentar novamente rapidamente
             resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, data=json.dumps(payload), timeout=120)
         resp.raise_for_status()
         data = resp.json()
-        # Formatos possiveis: lista com dicts contendo 'generated_text' ou dict com 'generated_text'
+
         if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and 'generated_text' in data[0]:
             return data[0]['generated_text']
         if isinstance(data, dict) and 'generated_text' in data:
             return data['generated_text']
-        # Alguns endpoints retornam {'choices':[{'text': ...}]}
         if isinstance(data, dict) and 'choices' in data and isinstance(data['choices'], list) and len(data['choices']) > 0:
             choice = data['choices'][0]
             if isinstance(choice, dict) and 'text' in choice:
