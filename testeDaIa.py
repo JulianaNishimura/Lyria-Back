@@ -140,8 +140,8 @@ def testar_hf_api():
 
 import requests
 import os
-
-def chamar_groq_api(prompt, max_tokens=300):
+# --- CHAMAR GROQ API ---
+def chamar_groq_api(prompt, max_tokens=400):
     groq_key = os.getenv("GROQ_API_KEY")
     if not groq_key:
         print("❌ GROQ: Chave não encontrada")
@@ -156,22 +156,24 @@ def chamar_groq_api(prompt, max_tokens=300):
         "messages": [{"role": "user", "content": prompt}],
         "model": "llama-3.1-8b-instant",
         "max_tokens": max_tokens,
-        "temperature": 0.7
+        "temperature": 0.3
     }
 
     try:
         print(f"🚀 GROQ: Enviando prompt ({len(prompt)} chars)...")
-        resp = requests.post("https://api.groq.com/openai/v1/chat/completions",
-                             headers=headers, json=payload, timeout=30)
+        resp = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
 
         print(f"📥 GROQ: Status HTTP {resp.status_code}")
-        data = resp.json()
-        print("DEBUG GROQ JSON:", data)
-
         if resp.status_code != 200:
             print(f"❌ GROQ: Erro {resp.status_code}: {resp.text[:200]}")
             return None
 
+        data = resp.json()
         resposta = data['choices'][0]['message']['content']
         print(f"✅ GROQ: Sucesso! ({len(resposta)} chars)")
         return resposta
@@ -181,7 +183,8 @@ def chamar_groq_api(prompt, max_tokens=300):
         return None
 
 
-def chamar_hf_inference(prompt, max_new_tokens=200, temperature=0.7):
+# --- CHAMAR HUGGING FACE INFERENCE API ---
+def chamar_hf_inference(prompt, max_new_tokens=400, temperature=0.3):
     hf_key = os.getenv("HUGGING_FACE_API_KEY")
     if not hf_key:
         print("❌ HF: Chave não encontrada, usando Groq...")
@@ -193,7 +196,7 @@ def chamar_hf_inference(prompt, max_new_tokens=200, temperature=0.7):
     }
 
     payload = {
-        "inputs": prompt[:1000],
+        "inputs": prompt[:2000],  # Limite maior para contexto
         "parameters": {
             "max_new_tokens": max_new_tokens,
             "temperature": temperature,
@@ -204,8 +207,13 @@ def chamar_hf_inference(prompt, max_new_tokens=200, temperature=0.7):
 
     try:
         print(f"🚀 HF: Enviando prompt ({len(prompt)} chars)...")
-        resp = requests.post("https://api-inference.huggingface.co/models/gpt2-medium",
-                             headers=headers, json=payload, timeout=30)
+        resp = requests.post(
+            "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+
         print(f"📥 HF: Status HTTP {resp.status_code}")
         data = resp.json()
         print("DEBUG HF JSON:", data)
