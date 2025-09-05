@@ -13,8 +13,8 @@ from banco.banco import (
 
 LIMITE_HISTORICO = 12
 SERPAPI_KEY = os.getenv("KEY_SERP_API")
-OLLAMA_HOST = 'https://testeollama.onrender.com'
-OLLAMA_MODEL = "gemma3n:latest"
+HUGGING_FACE_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
+HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
 
 def carregar_memorias(usuario):
     from banco.banco import carregar_memorias as carregar_memorias_db
@@ -23,7 +23,9 @@ def carregar_memorias(usuario):
 def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None): 
     LIMITE_HISTORICO_REDUZIDO = 6
     
-    prompt_parts = [persona]
+    prompt_parts = []
+    
+    prompt_parts.append(persona)
     
     if conversas:
         prompt_parts.append("Histórico recente:")
@@ -41,72 +43,58 @@ def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None):
     prompt = "\n".join(prompt_parts)
     
     payload = {
-        'model': OLLAMA_MODEL,
-        'prompt': prompt,
-        'stream': False,
-        'options': {
-            'temperature': 0.7, 
-            'top_p': 0.9, 
-            'num_predict': 200, 
-            'stop': ['\n\nUsuário:', 'Usuário:'] 
+        'inputs': prompt,
+        'parameters': {
+            'max_new_tokens': 200,
+            'temperature': 0.7,
+            'top_p': 0.9,
+            'stop_sequences': ['\n\nUsuário:', 'Usuário:']
         }
+    }
+    
+    headers = {
+        'Authorization': f'Bearer {HUGGING_FACE_API_KEY}',
+        'Content-Type': 'application/json'
     }
     
     try:
         response = requests.post(
-            f"{OLLAMA_HOST}/api/generate",
+            HF_MODEL_ENDPOINT,
             json=payload,
-            timeout=60, 
-            headers={'Content-Type': 'application/json'}
+            headers=headers,
+            timeout=60
         )
         
         response.raise_for_status()
         data = response.json()
         
-        resposta = data.get('response', '').strip()
-        
-        if not resposta:
+        if not data or not isinstance(data, list) or 'generated_text' not in data[0]:
             return "Desculpe, não consegui gerar uma resposta adequada."
+            
+        resposta = data[0]['generated_text'].strip()
         
+        if resposta.startswith(prompt):
+            resposta = resposta[len(prompt):].strip()
+
         if resposta.startswith('Lyria:'):
             resposta = resposta[6:].strip()
             
         return resposta
         
     except requests.exceptions.Timeout:
-        print("Timeout - Ollama demorou mais que 45s")
-        return "Desculpe, estou processando mais devagar hoje. Pode repetir a pergunta?"
+        return "Timeout - O servidor do Hugging Face demorou para responder."
         
     except requests.exceptions.ConnectionError:
-        print("Erro de conexão - Ollama pode estar offline")
-        return "Não consegui me conectar ao sistema. Verifique se o Ollama está rodando."
+        return "Não consegui me conectar ao servidor do Hugging Face."
         
     except requests.exceptions.HTTPError as e:
-        print(f"Erro HTTP {e.response.status_code}: {e.response.text}")
-        return "Houve um problema no processamento. Tente novamente."
+        return f"Houve um problema no processamento. Verifique sua chave de API e o modelo. Erro: {e.response.text}"
         
     except Exception as e:
-        print(f"Erro inesperado: {e}")
         return "Erro interno. Tente novamente em alguns instantes."
 
 def verificar_ollama_status():
-    try:
-        response = requests.get(f"{OLLAMA_HOST}/api/tags", timeout=5)
-        if response.status_code == 200:
-            modelos = response.json().get('models', [])
-            modelo_existe = any(m.get('name', '').startswith(OLLAMA_MODEL.split(':')[0]) for m in modelos)
-            return {
-                'status': 'online',
-                'modelo_existe': modelo_existe,
-                'modelos_disponiveis': [m.get('name') for m in modelos]
-            }
-        else:
-            return {'status': 'erro', 'detalhes': f'HTTP {response.status_code}'}
-            
-    except requests.exceptions.ConnectionError:
-        return {'status': 'offline', 'detalhes': 'Não foi possível conectar'}
-    except Exception as e:
-        return {'status': 'erro', 'detalhes': str(e)}
+    return {'status': 'info', 'detalhes': 'Usando a API de Inferência do Hugging Face.'}
 
 def buscar_na_web(pergunta):
     try:
@@ -119,7 +107,6 @@ def buscar_na_web(pergunta):
         return " ".join(trechos) if trechos else None
         
     except Exception as e:
-        print(f"Erro na busca web: {e}")
         return None
 
 def get_persona_texto(persona_tipo):
@@ -274,4 +261,4 @@ if __name__ == "__main__":
         )
         
         print(f"Lyria: {resposta}")
-        salvarMensagem(usuario, entrada, resposta, modelo_usado="ollama", tokens=None)
+        salvarMensagem(usuario, entrada, resposta, modelo_usado="hf", tokens=None)
