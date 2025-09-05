@@ -58,8 +58,7 @@ def testar_groq_api():
     
     try:
         print("🧪 GROQ: Testando conexão...")
-        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", 
-                           headers=headers, json=payload, timeout=10)
+        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=10)
         
         print(f"🧪 GROQ: Status HTTP {resp.status_code}")
         
@@ -108,8 +107,7 @@ def testar_hf_api():
     
     try:
         print("🧪 HF: Testando conexão...")
-        resp = requests.post("https://api-inference.huggingface.co/models/distilgpt2", 
-                           headers=headers, json=payload, timeout=15)
+        resp = requests.post("https://api-inference.huggingface.co/models/distilgpt2", headers=headers, json=payload, timeout=15)
         
         print(f"🧪 HF: Status HTTP {resp.status_code}")
         
@@ -140,104 +138,96 @@ def testar_hf_api():
         print(f"❌ HF: Erro inesperado: {e}")
         return False
 
+import requests
+import os
+
 def chamar_groq_api(prompt, max_tokens=300):
-    """Versão com debug da Groq API"""
     groq_key = os.getenv("GROQ_API_KEY")
     if not groq_key:
         print("❌ GROQ: Chave não encontrada")
         return None
-        
+
     headers = {
         "Authorization": f"Bearer {groq_key}",
         "Content-Type": "application/json"
     }
-    
+
     payload = {
         "messages": [{"role": "user", "content": prompt}],
-        "model": "llama3-8b-8192",
+        "model": "llama-3.1-8b-instant",
         "max_tokens": max_tokens,
         "temperature": 0.7
     }
-    
+
     try:
         print(f"🚀 GROQ: Enviando prompt ({len(prompt)} chars)...")
-        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", 
-                           headers=headers, json=payload, timeout=15)
-        
-        print(f"📥 GROQ: Resposta HTTP {resp.status_code}")
-        
+        resp = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                             headers=headers, json=payload, timeout=30)
+
+        print(f"📥 GROQ: Status HTTP {resp.status_code}")
+        data = resp.json()
+        print("DEBUG GROQ JSON:", data)
+
         if resp.status_code != 200:
             print(f"❌ GROQ: Erro {resp.status_code}: {resp.text[:200]}")
             return None
-            
-        data = resp.json()
+
         resposta = data['choices'][0]['message']['content']
         print(f"✅ GROQ: Sucesso! ({len(resposta)} chars)")
         return resposta
-        
+
     except Exception as e:
         print(f"❌ GROQ: Exceção: {e}")
         return None
 
-def chamar_hf_inference(prompt, max_new_tokens=200, temperature=0.7, max_tentativas=1):
-    """Versão simplificada com debug da HF"""
+
+def chamar_hf_inference(prompt, max_new_tokens=200, temperature=0.7):
     hf_key = os.getenv("HUGGING_FACE_API_KEY")
     if not hf_key:
-        print("❌ HF: Chave não encontrada, tentando Groq...")
+        print("❌ HF: Chave não encontrada, usando Groq...")
         return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
-    
-    # Se temos Groq disponível, usa ela primeiro (mais rápida)
-    if os.getenv("GROQ_API_KEY"):
-        print("🎯 Priorizando Groq (mais rápida)...")
-        groq_resposta = chamar_groq_api(prompt)
-        if groq_resposta:
-            return groq_resposta
-    
-    print("🚀 HF: Tentativa única com timeout curto...")
-    
+
     headers = {
         "Authorization": f"Bearer {hf_key}",
         "Content-Type": "application/json"
     }
-    
+
     payload = {
-        "inputs": prompt[:500],  # Prompt bem limitado
+        "inputs": prompt[:1000],
         "parameters": {
             "max_new_tokens": max_new_tokens,
             "temperature": temperature,
             "return_full_text": False
         },
-        "options": {"wait_for_model": False}  # Não espera carregar
+        "options": {"wait_for_model": True}
     }
-    
+
     try:
-        resp = requests.post("https://api-inference.huggingface.co/models/distilgpt2", 
-                           headers=headers, json=payload, timeout=10)  # Timeout curto
-        
-        print(f"📥 HF: Status {resp.status_code}")
-        
+        print(f"🚀 HF: Enviando prompt ({len(prompt)} chars)...")
+        resp = requests.post("https://api-inference.huggingface.co/models/gpt2-medium",
+                             headers=headers, json=payload, timeout=30)
+        print(f"📥 HF: Status HTTP {resp.status_code}")
+        data = resp.json()
+        print("DEBUG HF JSON:", data)
+
         if resp.status_code == 503:
             print("⚠️ HF: Modelo carregando, usando fallback...")
             return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
-        
+
         if resp.status_code != 200:
             print(f"❌ HF: Erro {resp.status_code}, usando fallback...")
             return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
-        
-        data = resp.json()
+
         if isinstance(data, list) and len(data) > 0 and 'generated_text' in data[0]:
             resposta = data[0]['generated_text'].strip()
             print(f"✅ HF: Sucesso! ({len(resposta)} chars)")
             return resposta
-        
+
         print("❌ HF: Formato inesperado, usando fallback...")
         return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
-        
-    except requests.exceptions.Timeout:
-        print("❌ HF: Timeout, usando fallback...")
-        return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
+
     except Exception as e:
-        print(f"❌ HF: Erro {e}, usando fallback...")
+        print(f"❌ HF: Exceção: {e}, usando fallback...")
         return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
 
 def gerar_resposta_offline(prompt):
