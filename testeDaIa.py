@@ -54,7 +54,7 @@ def chamar_hf_inference(prompt, max_new_tokens=512, temperature=0.3, top_p=0.95)
 LIMITE_HISTORICO = 12
 SERPAPI_KEY = os.getenv("KEY_SERP_API")
 HUGGING_FACE_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
-**HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/google/gemma-2b-it"**
+HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/google/gemma-2b-it"**
 
 def carregar_memorias(usuario):
     from banco.banco import carregar_memorias as carregar_memorias_db
