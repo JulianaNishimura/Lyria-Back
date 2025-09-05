@@ -3,15 +3,13 @@ import sqlite3
 import os
 from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 from banco.banco import (
-    carregar_conversas, 
-    salvarMensagem, 
+    carregar_conversas,
+    salvarMensagem,
     pegarPersonaEscolhida,
     escolherApersona,
     criarUsuario,
     criar_banco
 )
-
-import json
 
 import json
 
@@ -35,9 +33,7 @@ def chamar_hf_inference(prompt, max_new_tokens=512, temperature=0.3, top_p=0.95)
         }
     }
     try:
-        # Aumentando o timeout para 120 segundos
-        resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, data=json.dumps(payload), timeout=120)
-        
+        resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, data=json.dumps(payload), timeout=60)
         if resp.status_code == 503:
             resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, data=json.dumps(payload), timeout=120)
         resp.raise_for_status()
@@ -58,13 +54,11 @@ def chamar_hf_inference(prompt, max_new_tokens=512, temperature=0.3, top_p=0.95)
 LIMITE_HISTORICO = 12
 SERPAPI_KEY = os.getenv("KEY_SERP_API")
 HUGGING_FACE_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
-HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+**HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/google/gemma-2b-it"**
 
 def carregar_memorias(usuario):
     from banco.banco import carregar_memorias as carregar_memorias_db
     return carregar_memorias_db(usuario)
-
-
 
 def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None):
     LIMITE_HISTORICO_REDUZIDO = 6
@@ -204,12 +198,12 @@ def get_persona_texto(persona_tipo):
         PRIORIDADE CRÍTICA: Informações da web ajudam a entender contextos sociais atuais.
         """
     }
-    
+
     return personas.get(persona_tipo, personas['professor'])
 
 if __name__ == "__main__":
     criar_banco()
-    
+
     print("Do que você precisa?")
     print("1. Professor")
     print("2. Empresarial")
@@ -224,31 +218,31 @@ if __name__ == "__main__":
         exit()
 
     usuario = input("Informe seu nome: ").strip().lower()
-    
+
     try:
         criarUsuario(usuario, f"{usuario}@local.com", persona_tipo)
     except:
         escolherApersona(persona_tipo, usuario)
-    
+
     persona = get_persona_texto(persona_tipo)
-    
+
     print("\nModo texto ativo (digite 'sair' para encerrar)")
     while True:
         entrada = input("Você: ").strip()
         if entrada.lower() == 'sair':
             break
-            
+
         contexto_web = None
         if deve_buscar_na_web(entrada):
             contexto_web = buscar_na_web(entrada)
-            
+
         resposta = perguntar_ollama(
-            entrada, 
-            carregar_conversas(usuario), 
-            carregar_memorias(usuario), 
+            entrada,
+            carregar_conversas(usuario),
+            carregar_memorias(usuario),
             persona,
             contexto_web
         )
-        
+
         print(f"Lyria: {resposta}")
         salvarMensagem(usuario, entrada, resposta, modelo_usado="hf", tokens=None)
