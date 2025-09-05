@@ -83,30 +83,35 @@ def carregar_memorias(usuario):
     return carregar_memorias_db(usuario)
 
 def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None):
-    LIMITE_HISTORICO_REDUZIDO = 6
+    LIMITE_HISTORICO_REDUZIDO = 3  # Reduzido para evitar prompts muito longos
     prompt_parts = []
     
-    # Adiciona a persona
-    prompt_parts.append(persona)
+    # Versão condensada da persona para economizar tokens
+    persona_condensada = f"Você é Lyria. {persona.split('ESTILO DE COMUNICAÇÃO:')[1].split('RESTRIÇÕES')[0].strip()}" if 'ESTILO DE COMUNICAÇÃO:' in persona else persona[:200]
+    prompt_parts.append(persona_condensada)
     
-    # Adiciona histórico recente se existir
-    if conversas:
-        prompt_parts.append("\nHistorico recente:")
-        for msg in conversas[-LIMITE_HISTORICO_REDUZIDO:]:
-            prompt_parts.append(f"\nUsuario: {str(msg.get('pergunta', ''))}")
-            prompt_parts.append(f"\nLyria: {str(msg.get('resposta', ''))}")
+    # Adiciona apenas as 2 conversas mais recentes
+    if conversas and len(conversas) > 0:
+        prompt_parts.append("\nContexto:")
+        for msg in conversas[-2:]:  # Apenas 2 mensagens mais recentes
+            prompt_parts.append(f"\nU: {str(msg.get('pergunta', ''))[:100]}")  # Limita tamanho
+            prompt_parts.append(f"\nL: {str(msg.get('resposta', ''))[:100]}")
     
-    # Adiciona contexto da web se existir
+    # Adiciona contexto da web de forma mais concisa
     if contexto_web:
-        contexto_limitado = str(contexto_web)[:500]
-        prompt_parts.append(f"\nInfo web atual: {contexto_limitado}")
+        contexto_limitado = str(contexto_web)[:200]  # Ainda mais limitado
+        prompt_parts.append(f"\nInfo atual: {contexto_limitado}")
     
     # Adiciona pergunta atual
-    prompt_parts.append(f"\nPergunta atual: {str(pergunta)}")
-    prompt_parts.append("\nLyria:")  # Prompt para gerar resposta
+    prompt_parts.append(f"\nUsuário: {str(pergunta)}")
+    prompt_parts.append("\nLyria:")  # Prompt claro para gerar resposta
     
-    prompt = "".join(prompt_parts)
-    resposta = chamar_hf_inference(prompt)
+    prompt_final = "".join(prompt_parts)
+    
+    # Debug: mostra tamanho do prompt
+    print(f"Tamanho do prompt: {len(prompt_final)} caracteres")
+    
+    resposta = chamar_hf_inference(prompt_final)
     return resposta
 
 def verificar_ollama_status():
