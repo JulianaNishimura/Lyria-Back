@@ -34,8 +34,7 @@ def chamar_groq_api(prompt, max_tokens=300):
     }
     
     try:
-        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", 
-                           headers=headers, json=payload, timeout=15)
+        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=15)
         resp.raise_for_status()
         data = resp.json()
         return data['choices'][0]['message']['content']
