@@ -14,193 +14,314 @@ from banco.banco import (
 import json
 import time
 
-def chamar_groq_api(prompt, max_tokens=300):
-    """Fallback usando Groq API (gratuita e rápida)"""
-    if not GROQ_API_KEY:
-        return None
+# PRIMEIRO: VAMOS DEBUGAR AS VARIÁVEIS
+def verificar_configuracao():
+    print("=== DEBUG: VERIFICANDO CONFIGURAÇÃO ===")
+    
+    groq_key = os.getenv("GROQ_API_KEY")
+    hf_key = os.getenv("HUGGING_FACE_API_KEY")
+    serp_key = os.getenv("KEY_SERP_API")
+    
+    print(f"GROQ_API_KEY: {'✓ Encontrada (' + groq_key[:10] + '...)' if groq_key else '✗ NÃO ENCONTRADA'}")
+    print(f"HUGGING_FACE_API_KEY: {'✓ Encontrada (' + hf_key[:10] + '...)' if hf_key else '✗ NÃO ENCONTRADA'}")
+    print(f"KEY_SERP_API: {'✓ Encontrada (' + serp_key[:10] + '...)' if serp_key else '✗ NÃO ENCONTRADA'}")
+    
+    if not groq_key and not hf_key:
+        print("\n🚨 PROBLEMA: Nenhuma API de IA configurada!")
+        print("Siga os passos:")
+        print("1. Crie conta em https://console.groq.com")
+        print("2. Gere API Key")
+        print("3. Execute: export GROQ_API_KEY='sua_chave'")
+        print("4. Reinicie o programa")
+        return False
+    
+    return True
+
+def testar_groq_api():
+    """Testa se a Groq API está funcionando"""
+    groq_key = os.getenv("GROQ_API_KEY")
+    if not groq_key:
+        print("❌ GROQ: Chave não configurada")
+        return False
         
     headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Authorization": f"Bearer {groq_key}",
         "Content-Type": "application/json"
     }
     
     payload = {
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "model": "llama3-8b-8192",  # Modelo gratuito e rápido
+        "messages": [{"role": "user", "content": "Teste"}],
+        "model": "llama3-8b-8192",
+        "max_tokens": 50,
+        "temperature": 0.7
+    }
+    
+    try:
+        print("🧪 GROQ: Testando conexão...")
+        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", 
+                           headers=headers, json=payload, timeout=10)
+        
+        print(f"🧪 GROQ: Status HTTP {resp.status_code}")
+        
+        if resp.status_code == 401:
+            print("❌ GROQ: API Key inválida")
+            return False
+        elif resp.status_code == 429:
+            print("❌ GROQ: Rate limit atingido")
+            return False
+        elif resp.status_code != 200:
+            print(f"❌ GROQ: Erro HTTP {resp.status_code}: {resp.text}")
+            return False
+            
+        data = resp.json()
+        resposta = data['choices'][0]['message']['content']
+        print(f"✅ GROQ: Funcionando! Resposta teste: {resposta[:50]}...")
+        return True
+        
+    except requests.exceptions.Timeout:
+        print("❌ GROQ: Timeout na conexão")
+        return False
+    except requests.exceptions.ConnectionError:
+        print("❌ GROQ: Erro de conexão")
+        return False
+    except Exception as e:
+        print(f"❌ GROQ: Erro inesperado: {e}")
+        return False
+
+def testar_hf_api():
+    """Testa se a HF API está funcionando"""
+    hf_key = os.getenv("HUGGING_FACE_API_KEY")
+    if not hf_key:
+        print("❌ HF: Chave não configurada")
+        return False
+        
+    headers = {
+        "Authorization": f"Bearer {hf_key}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "inputs": "Teste",
+        "parameters": {"max_new_tokens": 20, "temperature": 0.7},
+        "options": {"wait_for_model": True}
+    }
+    
+    try:
+        print("🧪 HF: Testando conexão...")
+        resp = requests.post("https://api-inference.huggingface.co/models/distilgpt2", 
+                           headers=headers, json=payload, timeout=15)
+        
+        print(f"🧪 HF: Status HTTP {resp.status_code}")
+        
+        if resp.status_code == 401:
+            print("❌ HF: API Key inválida")
+            return False
+        elif resp.status_code == 503:
+            print("⚠️ HF: Modelo carregando (normal)")
+            return True  # Modelo carregando é ok
+        elif resp.status_code == 429:
+            print("❌ HF: Rate limit atingido")
+            return False
+        elif resp.status_code != 200:
+            print(f"❌ HF: Erro HTTP {resp.status_code}: {resp.text}")
+            return False
+            
+        data = resp.json()
+        print(f"✅ HF: Funcionando! Resposta: {str(data)[:100]}...")
+        return True
+        
+    except requests.exceptions.Timeout:
+        print("❌ HF: Timeout (comum nesta API)")
+        return False
+    except requests.exceptions.ConnectionError:
+        print("❌ HF: Erro de conexão")
+        return False
+    except Exception as e:
+        print(f"❌ HF: Erro inesperado: {e}")
+        return False
+
+def chamar_groq_api(prompt, max_tokens=300):
+    """Versão com debug da Groq API"""
+    groq_key = os.getenv("GROQ_API_KEY")
+    if not groq_key:
+        print("❌ GROQ: Chave não encontrada")
+        return None
+        
+    headers = {
+        "Authorization": f"Bearer {groq_key}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "messages": [{"role": "user", "content": prompt}],
+        "model": "llama3-8b-8192",
         "max_tokens": max_tokens,
         "temperature": 0.7
     }
     
     try:
-        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=15)
-        resp.raise_for_status()
+        print(f"🚀 GROQ: Enviando prompt ({len(prompt)} chars)...")
+        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", 
+                           headers=headers, json=payload, timeout=15)
+        
+        print(f"📥 GROQ: Resposta HTTP {resp.status_code}")
+        
+        if resp.status_code != 200:
+            print(f"❌ GROQ: Erro {resp.status_code}: {resp.text[:200]}")
+            return None
+            
         data = resp.json()
-        return data['choices'][0]['message']['content']
+        resposta = data['choices'][0]['message']['content']
+        print(f"✅ GROQ: Sucesso! ({len(resposta)} chars)")
+        return resposta
+        
     except Exception as e:
-        print(f"Erro Groq API: {e}")
+        print(f"❌ GROQ: Exceção: {e}")
         return None
 
-def chamar_hf_inference(prompt, max_new_tokens=200, temperature=0.7, max_tentativas=2):
-    if HUGGING_FACE_API_KEY is None or HUGGING_FACE_API_KEY.strip() == "":
-        print("Chave HF não encontrada, tentando Groq...")
-        return chamar_groq_api(prompt) or "Erro: nenhuma API disponível"
+def chamar_hf_inference(prompt, max_new_tokens=200, temperature=0.7, max_tentativas=1):
+    """Versão simplificada com debug da HF"""
+    hf_key = os.getenv("HUGGING_FACE_API_KEY")
+    if not hf_key:
+        print("❌ HF: Chave não encontrada, tentando Groq...")
+        return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
+    
+    # Se temos Groq disponível, usa ela primeiro (mais rápida)
+    if os.getenv("GROQ_API_KEY"):
+        print("🎯 Priorizando Groq (mais rápida)...")
+        groq_resposta = chamar_groq_api(prompt)
+        if groq_resposta:
+            return groq_resposta
+    
+    print("🚀 HF: Tentativa única com timeout curto...")
     
     headers = {
-        "Authorization": f"Bearer {HUGGING_FACE_API_KEY}",
+        "Authorization": f"Bearer {hf_key}",
         "Content-Type": "application/json"
     }
     
-    # Prompt ainda mais limitado
-    prompt_limitado = prompt[:600] if len(prompt) > 600 else prompt
-    
     payload = {
-        "inputs": prompt_limitado,
+        "inputs": prompt[:500],  # Prompt bem limitado
         "parameters": {
             "max_new_tokens": max_new_tokens,
             "temperature": temperature,
-            "top_p": 0.9,
             "return_full_text": False
         },
-        "options": {
-            "wait_for_model": True,
-            "use_cache": False
-        }
+        "options": {"wait_for_model": False}  # Não espera carregar
     }
     
-    for tentativa in range(max_tentativas):
-        try:
-            timeout = 8 + (tentativa * 5)  # 8s, 13s
-            print(f"HF API tentativa {tentativa + 1}/{max_tentativas} (timeout: {timeout}s)")
-            
-            resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, json=payload, timeout=timeout)
-            
-            if resp.status_code == 503:
-                print("Modelo HF carregando, tentando Groq...")
-                fallback = chamar_groq_api(prompt)
-                if fallback:
-                    return fallback
-                time.sleep(5)
-                continue
-            
-            if resp.status_code == 429:
-                print("Rate limit HF, tentando Groq...")
-                fallback = chamar_groq_api(prompt)
-                if fallback:
-                    return fallback
-                time.sleep(10)
-                continue
-            
-            resp.raise_for_status()
-            data = resp.json()
-
-            if isinstance(data, list) and len(data) > 0 and 'generated_text' in data[0]:
-                return data[0]['generated_text'].strip()
-            
-            if isinstance(data, dict) and 'generated_text' in data:
-                return data['generated_text'].strip()
-            
-            return "Resposta inesperada da HF API"
-            
-        except requests.exceptions.Timeout:
-            print(f"Timeout HF API (tentativa {tentativa + 1})")
-            if tentativa == 0:  # Na primeira tentativa de timeout, tenta Groq
-                print("Tentando Groq como fallback...")
-                fallback = chamar_groq_api(prompt)
-                if fallback:
-                    return fallback
-            continue
-        except requests.exceptions.RequestException as e:
-            print(f"Erro HF API: {e}")
-            # Tenta Groq em caso de erro
-            fallback = chamar_groq_api(prompt)
-            if fallback:
-                return fallback
-            continue
-    
-    # Se todas as tentativas falharam, tenta Groq uma última vez
-    print("Todas tentativas HF falharam, tentando Groq...")
-    fallback = chamar_groq_api(prompt)
-    if fallback:
-        return fallback
-    
-    # Se tudo falhou, resposta de emergência
-    return gerar_resposta_offline(prompt)
+    try:
+        resp = requests.post("https://api-inference.huggingface.co/models/distilgpt2", 
+                           headers=headers, json=payload, timeout=10)  # Timeout curto
+        
+        print(f"📥 HF: Status {resp.status_code}")
+        
+        if resp.status_code == 503:
+            print("⚠️ HF: Modelo carregando, usando fallback...")
+            return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
+        
+        if resp.status_code != 200:
+            print(f"❌ HF: Erro {resp.status_code}, usando fallback...")
+            return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
+        
+        data = resp.json()
+        if isinstance(data, list) and len(data) > 0 and 'generated_text' in data[0]:
+            resposta = data[0]['generated_text'].strip()
+            print(f"✅ HF: Sucesso! ({len(resposta)} chars)")
+            return resposta
+        
+        print("❌ HF: Formato inesperado, usando fallback...")
+        return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
+        
+    except requests.exceptions.Timeout:
+        print("❌ HF: Timeout, usando fallback...")
+        return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
+    except Exception as e:
+        print(f"❌ HF: Erro {e}, usando fallback...")
+        return chamar_groq_api(prompt) or gerar_resposta_offline(prompt)
 
 def gerar_resposta_offline(prompt):
-    """Resposta de emergência quando todas as APIs falham"""
-    pergunta = prompt.split("Usuário:")[-1].split("Lyria:")[0].strip() if "Usuário:" in prompt else prompt
+    """Resposta de emergência melhorada"""
+    print("🔄 Gerando resposta offline...")
     
-    respostas_genericas = {
-        "como": "Para fazer isso, você pode seguir alguns passos básicos. Preciso de mais detalhes para te ajudar melhor.",
-        "o que": "Essa é uma pergunta interessante. Posso explicar de forma simples se você me der mais contexto.",
-        "por que": "Existem algumas razões principais para isso. Você gostaria que eu explique alguma específica?",
-        "onde": "A localização ou lugar específico depende do contexto. Pode me dar mais informações?",
-        "quando": "O timing varia dependendo da situação. Precisa de informações sobre um período específico?",
-        "quem": "Isso envolve pessoas ou organizações específicas. Quer saber sobre alguém em particular?",
-    }
+    if "Usuário:" in prompt:
+        pergunta = prompt.split("Usuário:")[-1].split("Lyria:")[0].strip()
+    else:
+        pergunta = prompt.strip()
     
     pergunta_lower = pergunta.lower()
-    for palavra, resposta in respostas_genericas.items():
-        if palavra in pergunta_lower:
-            return resposta
     
-    return "Desculpe, estou com dificuldades técnicas no momento. Pode reformular sua pergunta ou tentar novamente em alguns minutos?"
+    # Respostas mais específicas
+    if any(word in pergunta_lower for word in ["como", "fazer", "tutorial"]):
+        return "Para isso, você pode começar com alguns passos básicos. Me dê mais detalhes e posso orientar melhor."
+    
+    if any(word in pergunta_lower for word in ["o que é", "definir", "conceito"]):
+        return "Esse é um tema interessante. Posso explicar de forma clara se você especificar o que quer saber."
+    
+    if any(word in pergunta_lower for word in ["por que", "porque", "razão"]):
+        return "Há várias razões para isso. Quer que eu explique algum aspecto específico?"
+    
+    if any(word in pergunta_lower for word in ["onde", "local", "lugar"]):
+        return "A localização específica depende do contexto. Pode dar mais detalhes?"
+    
+    if any(word in pergunta_lower for word in ["quando", "tempo", "data"]):
+        return "O timing varia conforme a situação. Precisa de informações sobre um período específico?"
+    
+    return f"Entendi sua pergunta sobre '{pergunta[:50]}...' mas estou com problemas técnicos. Pode tentar reformular ou aguardar alguns minutos?"
 
-LIMITE_HISTORICO = 12
+# Configuração das variáveis
 SERPAPI_KEY = os.getenv("KEY_SERP_API")
 HUGGING_FACE_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")  # Nova variável para Groq
-
-# Modelo mais leve e confiável
-HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/distilgpt2"
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 def carregar_memorias(usuario):
     from banco.banco import carregar_memorias as carregar_memorias_db
     return carregar_memorias_db(usuario)
 
 def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None):
-    # Prompt super otimizado
-    prompt_parts = []
+    print(f"\n🤖 Processando pergunta: {pergunta[:50]}...")
     
-    # Persona ultra-condensada
+    # Prompt otimizado
     if 'professor' in persona.lower():
-        prompt_parts.append("Você é Lyria, professora. Responda de forma didática e clara.")
+        intro = "Você é Lyria, professora. Seja didática e clara."
     elif 'empresarial' in persona.lower():
-        prompt_parts.append("Você é Lyria, assistente corporativa. Responda de forma profissional e objetiva.")
-    elif 'social' in persona.lower():
-        prompt_parts.append("Você é Lyria. Responda de forma empática e compreensiva.")
+        intro = "Você é Lyria, assistente corporativa. Seja profissional."
     else:
-        prompt_parts.append("Você é Lyria, assistente inteligente. Responda de forma útil.")
+        intro = "Você é Lyria. Seja empática e útil."
     
-    # Apenas 1 conversa anterior se existir
+    prompt_parts = [intro]
+    
+    # Contexto mínimo
     if conversas and len(conversas) > 0:
         ultima = conversas[-1]
-        prompt_parts.append(f"\nAnterior - U: {str(ultima.get('pergunta', ''))[:50]}")
-        prompt_parts.append(f" L: {str(ultima.get('resposta', ''))[:50]}")
+        prompt_parts.append(f"\nContexto: {ultima.get('pergunta', '')[:30]} | {ultima.get('resposta', '')[:30]}")
     
-    # Contexto web muito limitado
     if contexto_web:
-        prompt_parts.append(f"\nInfo: {str(contexto_web)[:100]}")
+        prompt_parts.append(f"\nInfo atual: {contexto_web[:80]}")
     
-    # Pergunta atual
-    prompt_parts.append(f"\nUsuário: {str(pergunta)}")
+    prompt_parts.append(f"\nUsuário: {pergunta}")
     prompt_parts.append("\nLyria:")
     
     prompt_final = "".join(prompt_parts)
-    print(f"Prompt: {len(prompt_final)} chars")
+    print(f"📝 Prompt final: {len(prompt_final)} caracteres")
     
     resposta = chamar_hf_inference(prompt_final)
+    print(f"💬 Resposta gerada: {len(resposta) if resposta else 0} caracteres")
+    
     return resposta
 
 def verificar_ollama_status():
-    status = "Usando HF Inference API"
-    if GROQ_API_KEY:
-        status += " com fallback Groq"
-    if not HUGGING_FACE_API_KEY and not GROQ_API_KEY:
-        status = "Nenhuma API configurada - modo offline"
-    return {'status': 'info', 'detalhes': status}
+    groq_ok = bool(os.getenv("GROQ_API_KEY"))
+    hf_ok = bool(os.getenv("HUGGING_FACE_API_KEY"))
+    
+    if groq_ok and hf_ok:
+        return {'status': 'info', 'detalhes': 'Groq + HF Inference APIs configuradas'}
+    elif groq_ok:
+        return {'status': 'info', 'detalhes': 'Apenas Groq API configurada (recomendado)'}
+    elif hf_ok:
+        return {'status': 'info', 'detalhes': 'Apenas HF Inference API configurada'}
+    else:
+        return {'status': 'warning', 'detalhes': 'Nenhuma API configurada - modo offline'}
 
 def buscar_na_web(pergunta):
     try:
@@ -217,147 +338,61 @@ def buscar_na_web(pergunta):
 
 def get_persona_texto(persona_tipo):
     personas = {
-        'professor': """
-        MODO: EDUCACIONAL
-
-        O QUE VOCÊ DEVE SER:
-        - Você será a professora Lyria
-
-        OBJETIVOS:
-        - Explicar conceitos de forma clara e objetiva
-        - Adaptar linguagem ao nível do usuário
-        - Fornecer exemplos práticos e relevantes
-        - Incentivar aprendizado progressivo
-        - Conectar novos conhecimentos com conhecimentos prévios
-
-        ABORDAGEM:
-        - Priorizar informações atualizadas da web quando disponíveis
-        - Estruturar respostas de forma lógica e sem rodeios
-        - Explicar apenas o necessário, evitando repetições
-        - Usar linguagem simples e direta
-        - Confirmar compreensão antes de avançar para conceitos mais complexos
-
-        ESTILO DE COMUNICAÇÃO:
-        - Tom didático, acessível e objetivo
-        - Respostas curtas e bem estruturadas
-        - Exemplos concretos
-        - Clareza acima de detalhes supérfluos
-
-        RESTRIÇÕES DE CONTEÚDO E ESTILO - INSTRUÇÃO CRÍTICA:
-        - NUNCA use qualquer tipo de formatação especial (asteriscos, negrito, itálico, listas numeradas ou marcadores).
-        - NUNCA invente informações. Se não houver certeza, declare a limitação e sugira buscar dados na web.
-        - NUNCA use palavrões ou linguagem ofensiva.
-        - NUNCA mencione ou apoie atividades ilegais.
-
-        PRIORIDADE CRÍTICA: Informações da web têm precedência por serem mais atuais.
-        """,
-
-        'empresarial': """
-        MODO: CORPORATIVO
-
-        O QUE VOCÊ DEVE SER:
-        - Você será a assistente Lyria
-
-        OBJETIVOS:
-        - Fornecer análises práticas e diretas
-        - Focar em resultados mensuráveis e ROI
-        - Otimizar processos e recursos
-        - Apresentar soluções implementáveis
-        - Considerar impactos financeiros e operacionais
-
-        ABORDAGEM:
-        - Priorizar dados atualizados da web sobre mercado e tendências
-        - Apresentar informações de forma hierárquica e clara
-        - Ser objetiva e evitar rodeios
-        - Foco em eficiência, produtividade e ação imediata
-
-        ESTILO DE COMUNICAÇÃO:
-        - Linguagem profissional, direta e objetiva
-        - Respostas concisas e estruturadas
-        - Terminologia empresarial apropriada
-        - Ênfase em ação e resultados práticos
-
-        RESTRIÇÕES DE CONTEÚDO E ESTILO - INSTRUÇÃO CRÍTICA:
-        - NUNCA use qualquer tipo de formatação especial (asteriscos, negrito, itálico, listas numeradas ou marcadores).
-        - NUNCA invente informações. Se não houver certeza, declare a limitação e sugira buscar dados na web.
-        - NUNCA use palavrões ou linguagem ofensiva.
-        - NUNCA mencione ou apoie atividades ilegais.
-
-        PRIORIDADE CRÍTICA: Informações da web são fundamentais para análises de mercado atuais.
-        """,
-
-        'social': """
-        MODO: SOCIAL E COMPORTAMENTAL
-
-        O QUE VOCÊ DEVE SER:
-        - Você será apenas a Lyria
-
-        OBJETIVOS:
-        - Oferecer suporte em questões sociais e relacionais
-        - Compreender diferentes perspectivas culturais e geracionais
-        - Fornecer conselhos equilibrados, claros e objetivos
-        - Promover autoconhecimento e bem-estar
-        - Sugerir recursos de apoio quando necessário
-
-        ABORDAGEM:
-        - Considerar informações atuais da web sobre comportamento social
-        - Adaptar conselhos ao contexto cultural específico
-        - Ser direta e empática, evitando excesso de explicações
-        - Promover reflexão prática e crescimento pessoal
-
-        ESTILO DE COMUNICAÇÃO:
-        - Linguagem natural, acolhedora e objetiva
-        - Respostas claras e sem enrolação
-        - Tom compreensivo, mas honesto
-        - Perguntas que incentivem insights rápidos
-
-        RESTRIÇÕES DE CONTEÚDO E ESTILO - INSTRUÇÃO CRÍTICA:
-        - NUNCA use qualquer tipo de formatação especial (asteriscos, negrito, itálico, listas numeradas ou marcadores).
-        - NUNCA invente informações. Se não houver certeza, declare a limitação e sugira buscar dados na web.
-        - NUNCA use palavrões ou linguagem ofensiva.
-        - NUNCA mencione ou apoie atividades ilegais.
-
-        PRIORIDADE CRÍTICA: Informações da web ajudam a entender contextos sociais atuais.
-        """
+        'professor': "MODO EDUCACIONAL - Você é a professora Lyria. Seja didática e clara.",
+        'empresarial': "MODO CORPORATIVO - Você é a assistente Lyria. Seja profissional e objetiva.", 
+        'social': "MODO SOCIAL - Você é Lyria. Seja empática e compreensiva."
     }
-
     return personas.get(persona_tipo, personas['professor'])
 
 if __name__ == "__main__":
+    print("=== LYRIA BOT - VERSÃO DEBUG ===\n")
+    
+    # Verificação inicial
+    if not verificar_configuracao():
+        exit(1)
+    
+    # Teste das APIs
+    print("\n=== TESTANDO APIS ===")
+    groq_ok = testar_groq_api()
+    hf_ok = testar_hf_api()
+    
+    if not groq_ok and not hf_ok:
+        print("\n🚨 NENHUMA API FUNCIONANDO!")
+        print("Continuando em modo offline limitado...")
+    
     criar_banco()
 
-    print("Do que você precisa?")
+    print("\nDo que você precisa?")
     print("1. Professor")
-    print("2. Empresarial")
-    escolha = input("Escolha: ").strip()
+    print("2. Empresarial") 
+    print("3. Social")
+    escolha = input("Escolha (1-3): ").strip()
 
-    if escolha == '1':
-        persona_tipo = 'professor'
-    elif escolha == '2':
-        persona_tipo = 'empresarial'
-    else:
-        print("Opção inválida")
-        exit()
+    persona_map = {'1': 'professor', '2': 'empresarial', '3': 'social'}
+    persona_tipo = persona_map.get(escolha, 'professor')
 
     usuario = input("Informe seu nome: ").strip().lower()
 
     try:
         criarUsuario(usuario, f"{usuario}@local.com", persona_tipo)
+        print(f"✅ Usuário {usuario} criado com persona {persona_tipo}")
     except:
         escolherApersona(persona_tipo, usuario)
+        print(f"✅ Persona {persona_tipo} atualizada para {usuario}")
 
     persona = get_persona_texto(persona_tipo)
-
-    print(f"\n{verificar_ollama_status()['detalhes']}")
-    print("Modo texto ativo (digite 'sair' para encerrar)")
+    status = verificar_ollama_status()
+    print(f"\n{status['detalhes']}")
+    print("\n=== CHAT INICIADO (digite 'sair' para encerrar) ===")
     
     while True:
-        entrada = input("Você: ").strip()
+        entrada = input("\nVocê: ").strip()
         if entrada.lower() == 'sair':
             break
 
         contexto_web = None
         if deve_buscar_na_web(entrada):
+            print("🌐 Buscando informações na web...")
             contexto_web = buscar_na_web(entrada)
 
         resposta = perguntar_ollama(
@@ -368,5 +403,5 @@ if __name__ == "__main__":
             contexto_web
         )
 
-        print(f"Lyria: {resposta}")
-        salvarMensagem(usuario, entrada, resposta, modelo_usado="hf", tokens=None)
+        print(f"\nLyria: {resposta}")
+        salvarMensagem(usuario, entrada, resposta, modelo_usado="api", tokens=None)
