@@ -16,10 +16,12 @@ import json
 def chamar_hf_inference(prompt, max_new_tokens=512, temperature=0.3, top_p=0.95):
     if HUGGING_FACE_API_KEY is None or HUGGING_FACE_API_KEY.strip() == "":
         raise RuntimeError("Variavel de ambiente HUGGING_FACE_API_KEY nao encontrada.")
+    
     headers = {
-        "Authorization": "Bearer " + HUGGING_FACE_API_KEY,
+        "Authorization": f"Bearer {HUGGING_FACE_API_KEY}",
         "Content-Type": "application/json"
     }
+    
     payload = {
         "inputs": prompt,
         "parameters": {
@@ -32,29 +34,49 @@ def chamar_hf_inference(prompt, max_new_tokens=512, temperature=0.3, top_p=0.95)
             "wait_for_model": True
         }
     }
+    
     try:
-        resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, data=json.dumps(payload), timeout=60)
+        resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, json=payload, timeout=60)
+        
+        # Se o serviço estiver carregando, espera mais tempo
         if resp.status_code == 503:
-            resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, data=json.dumps(payload), timeout=120)
+            resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, json=payload, timeout=120)
+        
         resp.raise_for_status()
         data = resp.json()
 
-        if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and 'generated_text' in data[0]:
-            return data[0]['generated_text']
+        # Trata diferentes formatos de resposta
+        if isinstance(data, list) and len(data) > 0:
+            if isinstance(data[0], dict) and 'generated_text' in data[0]:
+                return data[0]['generated_text']
+        
         if isinstance(data, dict) and 'generated_text' in data:
             return data['generated_text']
-        if isinstance(data, dict) and 'choices' in data and isinstance(data['choices'], list) and len(data['choices']) > 0:
-            choice = data['choices'][0]
-            if isinstance(choice, dict) and 'text' in choice:
-                return choice['text']
+            
         return str(data)
+        
     except requests.RequestException as e:
-        return "Ocorreu um erro ao chamar a Inference API: " + str(e)
+        return f"Erro ao chamar a Inference API: {str(e)}"
 
 LIMITE_HISTORICO = 12
 SERPAPI_KEY = os.getenv("KEY_SERP_API")
 HUGGING_FACE_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
-HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/google/gemma-2b-it"
+
+# MODELOS ALTERNATIVOS DISPONÍVEIS NA INFERENCE API:
+# Opção 1: Microsoft DialoGPT (conversacional, leve)
+# HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
+
+# Opção 2: GPT-2 (clássico, funcional)
+HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/gpt2"
+
+# Opção 3: DistilGPT-2 (mais rápido)
+# HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/distilgpt2"
+
+# Opção 4: Flan-T5 (Google, bom para instruções)
+# HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/google/flan-t5-base"
+
+# Opção 5: Para português - BERTimbau GPT
+# HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/neuralmind/bert-base-portuguese-cased"
 
 def carregar_memorias(usuario):
     from banco.banco import carregar_memorias as carregar_memorias_db
@@ -63,16 +85,26 @@ def carregar_memorias(usuario):
 def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None):
     LIMITE_HISTORICO_REDUZIDO = 6
     prompt_parts = []
+    
+    # Adiciona a persona
     prompt_parts.append(persona)
+    
+    # Adiciona histórico recente se existir
     if conversas:
-        prompt_parts.append("Historico recente:")
+        prompt_parts.append("\nHistorico recente:")
         for msg in conversas[-LIMITE_HISTORICO_REDUZIDO:]:
-            prompt_parts.append("Usuario: " + str(msg.get('pergunta', '')))
-            prompt_parts.append("Lyria: " + str(msg.get('resposta', '')))
+            prompt_parts.append(f"\nUsuario: {str(msg.get('pergunta', ''))}")
+            prompt_parts.append(f"\nLyria: {str(msg.get('resposta', ''))}")
+    
+    # Adiciona contexto da web se existir
     if contexto_web:
         contexto_limitado = str(contexto_web)[:500]
-        prompt_parts.append("Info web atual: " + contexto_limitado)
-    prompt_parts.append("Pergunta atual: " + str(pergunta))
+        prompt_parts.append(f"\nInfo web atual: {contexto_limitado}")
+    
+    # Adiciona pergunta atual
+    prompt_parts.append(f"\nPergunta atual: {str(pergunta)}")
+    prompt_parts.append("\nLyria:")  # Prompt para gerar resposta
+    
     prompt = "".join(prompt_parts)
     resposta = chamar_hf_inference(prompt)
     return resposta
