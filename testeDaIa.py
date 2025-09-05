@@ -11,6 +11,50 @@ from banco.banco import (
     criar_banco
 )
 
+
+
+import json
+
+def chamar_hf_inference(prompt, max_new_tokens=512, temperature=0.3, top_p=0.95):
+    if HUGGING_FACE_API_KEY is None or HUGGING_FACE_API_KEY.strip() == "":
+        raise RuntimeError("Variavel de ambiente HUGGING_FACE_API_KEY nao encontrada.")
+    headers = {
+        "Authorization": "Bearer " + HUGGING_FACE_API_KEY,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens": max_new_tokens,
+            "temperature": temperature,
+            "top_p": top_p,
+            "return_full_text": False
+        },
+        "options": {
+            "wait_for_model": True
+        }
+    }
+    try:
+        resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, data=json.dumps(payload), timeout=60)
+        if resp.status_code == 503:
+            # Modelo aquecendo; tentar novamente rapidamente
+            resp = requests.post(HF_MODEL_ENDPOINT, headers=headers, data=json.dumps(payload), timeout=120)
+        resp.raise_for_status()
+        data = resp.json()
+        # Formatos possiveis: lista com dicts contendo 'generated_text' ou dict com 'generated_text'
+        if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and 'generated_text' in data[0]:
+            return data[0]['generated_text']
+        if isinstance(data, dict) and 'generated_text' in data:
+            return data['generated_text']
+        # Alguns endpoints retornam {'choices':[{'text': ...}]}
+        if isinstance(data, dict) and 'choices' in data and isinstance(data['choices'], list) and len(data['choices']) > 0:
+            choice = data['choices'][0]
+            if isinstance(choice, dict) and 'text' in choice:
+                return choice['text']
+        return str(data)
+    except requests.RequestException as e:
+        return "Ocorreu um erro ao chamar a Inference API: " + str(e)
+
 LIMITE_HISTORICO = 12
 SERPAPI_KEY = os.getenv("KEY_SERP_API")
 HUGGING_FACE_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
@@ -20,78 +64,25 @@ def carregar_memorias(usuario):
     from banco.banco import carregar_memorias as carregar_memorias_db
     return carregar_memorias_db(usuario)
 
-def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None): 
-    LIMITE_HISTORICO_REDUZIDO = 6
-    
-    prompt_parts = []
-    
-    prompt_parts.append(persona)
-    
-    if conversas:
-        prompt_parts.append("Histórico recente:")
-        for msg in conversas[-LIMITE_HISTORICO_REDUZIDO:]:
-            prompt_parts.append(f"Usuário: {msg['pergunta']}")
-            prompt_parts.append(f"Lyria: {msg['resposta']}")
-    
-    if contexto_web:
-        contexto_limitado = contexto_web[:500] 
-        prompt_parts.append(f"Info web atual: {contexto_limitado}")
-    
-    prompt_parts.append(f"Usuário: {pergunta}")
-    prompt_parts.append("Lyria:")
-    
-    prompt = "\n".join(prompt_parts)
-    
-    payload = {
-        'inputs': prompt,
-        'parameters': {
-            'max_new_tokens': 200,
-            'temperature': 0.7,
-            'top_p': 0.9,
-            'stop_sequences': ['\n\nUsuário:', 'Usuário:']
-        }
-    }
-    
-    headers = {
-        'Authorization': f'Bearer {HUGGING_FACE_API_KEY}',
-        'Content-Type': 'application/json'
-    }
-    
-    try:
-        response = requests.post(
-            HF_MODEL_ENDPOINT,
-            json=payload,
-            headers=headers,
-            timeout=60
-        )
-        
-        response.raise_for_status()
-        data = response.json()
-        
-        if not data or not isinstance(data, list) or 'generated_text' not in data[0]:
-            return "Desculpe, não consegui gerar uma resposta adequada."
-            
-        resposta = data[0]['generated_text'].strip()
-        
-        if resposta.startswith(prompt):
-            resposta = resposta[len(prompt):].strip()
 
-        if resposta.startswith('Lyria:'):
-            resposta = resposta[6:].strip()
-            
-        return resposta
-        
-    except requests.exceptions.Timeout:
-        return "Timeout - O servidor do Hugging Face demorou para responder."
-        
-    except requests.exceptions.ConnectionError:
-        return "Não consegui me conectar ao servidor do Hugging Face."
-        
-    except requests.exceptions.HTTPError as e:
-        return f"Houve um problema no processamento. Verifique sua chave de API e o modelo. Erro: {e.response.text}"
-        
-    except Exception as e:
-        return "Erro interno. Tente novamente em alguns instantes."
+
+def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None):
+    LIMITE_HISTORICO_REDUZIDO = 6
+    prompt_parts = []
+    prompt_parts.append(persona)
+    if conversas:
+        prompt_parts.append("Historico recente:")
+        for msg in conversas[-LIMITE_HISTORICO_REDUZIDO:]:
+            prompt_parts.append("Usuario: " + str(msg.get('pergunta', '')))
+            prompt_parts.append("Lyria: " + str(msg.get('resposta', '')))
+    if contexto_web:
+        contexto_limitado = str(contexto_web)[:500]
+        prompt_parts.append("Info web atual: " + contexto_limitado)
+    prompt_parts.append("Pergunta atual: " + str(pergunta))
+    prompt = "
+".join(prompt_parts)
+    resposta = chamar_hf_inference(prompt)
+    return resposta
 
 def verificar_ollama_status():
     return {'status': 'info', 'detalhes': 'Usando a API de Inferência do Hugging Face.'}
