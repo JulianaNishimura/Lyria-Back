@@ -7,7 +7,6 @@ from banco.banco import (
     criarUsuario, 
     procurarUsuarioPorEmail, 
     pegarHistorico,
-    criar_banco,
     salvarMensagem,
     carregar_conversas,
     carregar_memorias

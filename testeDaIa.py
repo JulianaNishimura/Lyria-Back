@@ -5,7 +5,6 @@ from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 from banco.banco import (
     carregar_conversas,
     salvarMensagem,
-    pegarPersonaEscolhida,
     escolherApersona,
     criarUsuario,
     criar_banco
@@ -14,7 +13,6 @@ from banco.banco import (
 import json
 import time
 
-# PRIMEIRO: VAMOS DEBUGAR AS VARIÁVEIS
 def verificar_configuracao():
     print("=== DEBUG: VERIFICANDO CONFIGURAÇÃO ===")
     

@@ -1,17 +1,16 @@
-import sqlite3
+import psycopg2
+import psycopg2.extras
 from datetime import datetime
 import os
 
-DB_NOME = os.path.join(os.path.dirname(__file__), "lyria.db")
+DB_URL = os.getenv("BANCO_API")
 
 def criar_banco():
-    conn = sqlite3.connect(DB_NOME, timeout=10, check_same_thread=False)
+    conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor()
-    cursor.execute("PRAGMA journal_mode=WAL;")
-    cursor.execute("PRAGMA synchronous=NORMAL;")
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS usuarios (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         nome TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         senha_hash TEXT,
@@ -22,7 +21,7 @@ def criar_banco():
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS conversas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         usuario_id INTEGER NOT NULL,
         mensagens TEXT,
         iniciado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -33,7 +32,7 @@ def criar_banco():
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS user_requests (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         usuario_id INTEGER NOT NULL,
         conversa_id INTEGER NOT NULL,
         conteudo TEXT NOT NULL,
@@ -44,7 +43,7 @@ def criar_banco():
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS ai_responses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         request_id INTEGER NOT NULL,
         conteudo TEXT NOT NULL,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -55,7 +54,7 @@ def criar_banco():
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS mensagens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         conversa_id INTEGER NOT NULL,
         request_id INTEGER NOT NULL,
         response_id INTEGER NOT NULL,
@@ -67,7 +66,7 @@ def criar_banco():
     """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS memorias (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         usuario_id INTEGER NOT NULL,
         chave TEXT NOT NULL,
         valor TEXT NOT NULL,
@@ -84,9 +83,9 @@ def criar_banco():
     conn.close()
 
 def carregar_memorias(usuario, limite=20):
-    conn = sqlite3.connect(DB_NOME, timeout=10, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    conn = psycopg2.connect(DB_URL)
+    conn.autocommit = True
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute("""
         SELECT ur.conteudo AS usuario_disse,
                ar.conteudo AS ia_respondeu,
@@ -96,9 +95,9 @@ def carregar_memorias(usuario, limite=20):
         JOIN ai_responses ar ON m.response_id = ar.id
         JOIN conversas c ON m.conversa_id = c.id
         JOIN usuarios u ON c.usuario_id = u.id
-        WHERE u.nome = ?
+        WHERE u.nome = %s
         ORDER BY m.criado_em DESC
-        LIMIT ?
+        LIMIT %s
     """, (usuario, limite))
     results = cursor.fetchall()
     conn.close()
@@ -109,46 +108,44 @@ def carregar_memorias(usuario, limite=20):
     return list(reversed(memorias))
 
 def pegarPersonaEscolhida(usuario):
-    conn = sqlite3.connect(DB_NOME, timeout=10, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT persona_escolhida FROM usuarios WHERE nome = ?", (usuario,))
+    conn = psycopg2.connect(DB_URL)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cursor.execute("SELECT persona_escolhida FROM usuarios WHERE nome = %s", (usuario,))
     result = cursor.fetchone()
     conn.close()
     return result["persona_escolhida"] if result else None
 
 def escolherApersona(persona, usuario):
-    conn = sqlite3.connect(DB_NOME, timeout=10, check_same_thread=False)
+    conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor()
-    cursor.execute("UPDATE usuarios SET persona_escolhida = ? WHERE nome = ?", (persona, usuario))
+    cursor.execute("UPDATE usuarios SET persona_escolhida = %s WHERE nome = %s", (persona, usuario))
     conn.commit()
     conn.close()
 
 def criarUsuario(nome, email, persona, senha_hash=None):
-    conn = sqlite3.connect(DB_NOME, timeout=10, check_same_thread=False)
+    conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO usuarios (nome, email, persona_escolhida, senha_hash, criado_em, ultimo_acesso)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        RETURNING id
     """, (nome, email, persona, senha_hash, datetime.now(), datetime.now()))
+    usuario_id = cursor.fetchone()[0]
     conn.commit()
-    usuario_id = cursor.lastrowid
     conn.close()
     return usuario_id
 
 def procurarUsuarioPorEmail(usuarioEmail):
-    conn = sqlite3.connect(DB_NOME, timeout=10, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM usuarios WHERE email = ?", (usuarioEmail,))
+    conn = psycopg2.connect(DB_URL)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cursor.execute("SELECT * FROM usuarios WHERE email = %s", (usuarioEmail,))
     result = cursor.fetchone()
     conn.close()
     return dict(result) if result else None
 
 def pegarHistorico(usuario, limite=3):
-    conn = sqlite3.connect(DB_NOME, timeout=10, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    conn = psycopg2.connect(DB_URL)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute("""
         SELECT ur.conteudo AS pergunta,
                ar.conteudo AS resposta,
@@ -158,18 +155,17 @@ def pegarHistorico(usuario, limite=3):
         JOIN ai_responses ar ON m.response_id = ar.id
         JOIN conversas c ON m.conversa_id = c.id
         JOIN usuarios u ON c.usuario_id = u.id
-        WHERE u.nome = ?
+        WHERE u.nome = %s
         ORDER BY m.criado_em DESC
-        LIMIT ?
+        LIMIT %s
     """, (usuario, limite))
     results = cursor.fetchall()
     conn.close()
     return [dict(row) for row in results]
 
 def carregar_conversas(usuario, limite=12):
-    conn = sqlite3.connect(DB_NOME, timeout=10, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    conn = psycopg2.connect(DB_URL)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute("""
         SELECT ur.conteudo AS pergunta, ar.conteudo AS resposta
         FROM mensagens m
@@ -177,20 +173,21 @@ def carregar_conversas(usuario, limite=12):
         JOIN ai_responses ar ON m.response_id = ar.id
         JOIN conversas c ON m.conversa_id = c.id
         JOIN usuarios u ON c.usuario_id = u.id
-        WHERE u.nome = ?
+        WHERE u.nome = %s
         ORDER BY m.criado_em ASC
-        LIMIT ?
+        LIMIT %s
     """, (usuario, limite))
     results = cursor.fetchall()
     conn.close()
     return [{"pergunta": row["pergunta"], "resposta": row["resposta"]} for row in results]
 
 def salvarMensagem(usuario, pergunta, resposta, modelo_usado=None, tokens=None):
-    conn = sqlite3.connect(DB_NOME, timeout=10, check_same_thread=False)
+    conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor()
+
     cursor.execute("""
         SELECT id FROM conversas 
-        WHERE usuario_id = (SELECT id FROM usuarios WHERE nome=?)
+        WHERE usuario_id = (SELECT id FROM usuarios WHERE nome=%s)
         ORDER BY iniciado_em DESC LIMIT 1
     """, (usuario,))
     conversa = cursor.fetchone()
@@ -198,30 +195,39 @@ def salvarMensagem(usuario, pergunta, resposta, modelo_usado=None, tokens=None):
         conversa_id = conversa[0]
     else:
         cursor.execute("""
-            INSERT INTO conversas (usuario_id) VALUES ((SELECT id FROM usuarios WHERE nome=?))
+            INSERT INTO conversas (usuario_id) VALUES ((SELECT id FROM usuarios WHERE nome=%s))
+            RETURNING id
         """, (usuario,))
-        conversa_id = cursor.lastrowid
+        conversa_id = cursor.fetchone()[0]
+
     cursor.execute("""
         INSERT INTO user_requests (usuario_id, conversa_id, conteudo)
-        VALUES ((SELECT id FROM usuarios WHERE nome=?), ?, ?)
+        VALUES ((SELECT id FROM usuarios WHERE nome=%s), %s, %s)
+        RETURNING id
     """, (usuario, conversa_id, pergunta))
-    request_id = cursor.lastrowid
+    request_id = cursor.fetchone()[0]
+
     cursor.execute("""
         INSERT INTO ai_responses (request_id, conteudo, modelo_usado, tokens)
-        VALUES (?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s)
+        RETURNING id
     """, (request_id, resposta, modelo_usado, tokens))
-    response_id = cursor.lastrowid
+    response_id = cursor.fetchone()[0]
+
     cursor.execute("""
         INSERT INTO mensagens (conversa_id, request_id, response_id)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
     """, (conversa_id, request_id, response_id))
+
     cursor.execute("""
         INSERT INTO memorias (usuario_id, chave, valor, tipo, conversa_origem)
-        VALUES ((SELECT id FROM usuarios WHERE nome=?), ?, ?, 'conversa', ?)
+        VALUES ((SELECT id FROM usuarios WHERE nome=%s), %s, %s, 'conversa', %s)
     """, (usuario, f"pergunta_{request_id}", pergunta, conversa_id))
+
     cursor.execute("""
         INSERT INTO memorias (usuario_id, chave, valor, tipo, conversa_origem)
-        VALUES ((SELECT id FROM usuarios WHERE nome=?), ?, ?, 'conversa', ?)
+        VALUES ((SELECT id FROM usuarios WHERE nome=%s), %s, %s, 'conversa', %s)
     """, (usuario, f"resposta_{response_id}", resposta, conversa_id))
+
     conn.commit()
     conn.close()
