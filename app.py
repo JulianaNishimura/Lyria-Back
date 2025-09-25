@@ -13,6 +13,7 @@ from banco.banco import (
 )
 from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 from waitress import serve
+import os
 
 app = Flask(__name__)
 CORS(app)
