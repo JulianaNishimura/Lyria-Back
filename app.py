@@ -23,13 +23,16 @@ def conversarSemConta():
     data = request.get_json()
     if not data or 'pergunta' not in data:
         return jsonify({"erro": "Campo 'pergunta' é obrigatório"}), 400
+    elif 'persona' not in data:
+        return jsonify({"erro": "Campo 'persona' é obrigatório"}), 400
     pergunta = data['pergunta']
+    persona = data['persona']
     
     try:
         contexto_web = None
         if deve_buscar_na_web(pergunta):
             contexto_web = buscar_na_web(pergunta)
-        resposta = perguntar_ollama(pergunta, None, None, 'professor', contexto_web)
+        resposta = perguntar_ollama(pergunta, None, None, persona, contexto_web)
         return jsonify({"resposta": resposta})
         
     except Exception as e:
