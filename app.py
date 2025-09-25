@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from testeDaIa import perguntar_ollama, buscar_na_web, get_persona_texto
 from banco.banco import (
@@ -17,13 +17,60 @@ from waitress import serve
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
+app.secret_key = os.environ.get('SECRET_KEY', 'sua_chave_secreta_aqui')
 
 try:
     criar_banco()
     print("✅ Tabelas criadas/verificadas com sucesso!")
 except Exception as e:
     print(f"❌ Erro ao criar tabelas: {e}")
+
+# Rota de Login
+@app.route('/Lyria/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    if not data or 'email' not in data:
+        return jsonify({"erro": "Campo 'email' é obrigatório"}), 400
+    
+    email = data['email']
+    senha_hash = data.get('senha_hash')
+    
+    try:
+        usuario = procurarUsuarioPorEmail(email)
+        if not usuario:
+            return jsonify({"erro": "Usuário não encontrado"}), 404
+        
+        # Se há senha_hash no banco, verificar
+        if usuario.get('senha_hash') and senha_hash != usuario['senha_hash']:
+            return jsonify({"erro": "Senha incorreta"}), 401
+        
+        # Login bem-sucedido - salvar na sessão
+        session['usuario_email'] = usuario['email']
+        session['usuario_nome'] = usuario['nome'] 
+        session['usuario_id'] = usuario['id']
+        
+        return jsonify({
+            "sucesso": "Login realizado com sucesso",
+            "usuario": usuario['nome'],
+            "persona": usuario.get('persona_escolhida')
+        })
+        
+    except Exception as e:
+        return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
+
+# Rota de Logout
+@app.route('/Lyria/logout', methods=['POST'])
+def logout():
+    session.pop('usuario_email', None)
+    session.pop('usuario_nome', None)
+    session.pop('usuario_id', None)
+    return jsonify({"sucesso": "Logout realizado com sucesso"})
+
+def verificar_login():
+    if 'usuario_email' not in session:
+        return None
+    return session['usuario_email']  
 
 @app.route('/Lyria/conversar', methods=['POST'])
 def conversarSemConta():
@@ -45,8 +92,12 @@ def conversarSemConta():
     except Exception as e:
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
-@app.route('/Lyria/<usuario>/conversar', methods=['POST'])
-def conversar(usuario):
+@app.route('/Lyria/conversar-logado', methods=['POST'])
+def conversar_logado():
+    usuario = verificar_login()
+    if not usuario:
+        return jsonify({"erro": "Usuário não está logado"}), 401
+    
     data = request.get_json()
     if not data or 'pergunta' not in data:
         return jsonify({"erro": "Campo 'pergunta' é obrigatório"}), 400
@@ -69,16 +120,24 @@ def conversar(usuario):
     except Exception as e:
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
-@app.route('/Lyria/conversas/<usuario>', methods=['GET'])
-def get_conversas(usuario):
+@app.route('/Lyria/conversas', methods=['GET'])
+def get_conversas_logado():
+    usuario = verificar_login()
+    if not usuario:
+        return jsonify({"erro": "Usuário não está logado"}), 401
+    
     try:
         conversas = carregar_conversas(usuario)
         return jsonify({"conversas": conversas})
     except Exception as e:
         return jsonify({"erro": f"Erro ao buscar conversas: {str(e)}"}), 500
 
-@app.route('/Lyria/<usuario>/PersonaEscolhida', methods=['GET'])
-def get_persona_escolhida(usuario):
+@app.route('/Lyria/PersonaEscolhida', methods=['GET'])
+def get_persona_escolhida_logado():
+    usuario = verificar_login()
+    if not usuario:
+        return jsonify({"erro": "Usuário não está logado"}), 401
+    
     try:
         persona = pegarPersonaEscolhida(usuario)
         if persona:
@@ -87,8 +146,12 @@ def get_persona_escolhida(usuario):
     except Exception as e:
         return jsonify({"erro": f"Erro ao buscar persona: {str(e)}"}), 500
 
-@app.route('/Lyria/<usuario>/PersonaEscolhida', methods=['POST'])
-def set_persona_escolhida(usuario):
+@app.route('/Lyria/PersonaEscolhida', methods=['POST'])
+def set_persona_escolhida_logado():
+    usuario = verificar_login()
+    if not usuario:
+        return jsonify({"erro": "Usuário não está logado"}), 401
+    
     data = request.get_json()
     if not data or 'persona' not in data:
         return jsonify({"erro": "Campo 'persona' é obrigatório"}), 400
@@ -139,8 +202,12 @@ def get_usuario(usuarioEmail):
     except Exception as e:
         return jsonify({"erro": f"Erro ao buscar usuário: {str(e)}"}), 500
 
-@app.route('/Lyria/<usuario>/historico', methods=['GET'])
-def get_historico_recente(usuario):
+@app.route('/Lyria/historico', methods=['GET'])
+def get_historico_recente_logado():
+    usuario = verificar_login()
+    if not usuario:
+        return jsonify({"erro": "Usuário não está logado"}), 401
+    
     try:
         limite = request.args.get('limite', 10, type=int)
         if limite > 50: 
@@ -262,5 +329,3 @@ def listar_personas():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  
     serve(app, host="0.0.0.0", port=port)
-
-
