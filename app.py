@@ -8,6 +8,7 @@ from banco.banco import (
     procurarUsuarioPorEmail, 
     pegarHistorico,
     salvarMensagem,
+    criar_banco,
     carregar_conversas,
     carregar_memorias
 )
@@ -110,7 +111,7 @@ def criar_usuario_route():
 
     nome = data['nome']
     email = data['email']
-    persona = data.get('persona', 'professor')
+    persona = data.get('persona')
     senha_hash = data.get('senha_hash')
     
     if persona not in ['professor', 'empresarial', 'social']:
