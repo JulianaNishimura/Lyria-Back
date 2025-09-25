@@ -9,7 +9,6 @@ from banco.banco import (
     criarUsuario,
     criar_banco
 )
-
 import json
 import time
 

@@ -18,6 +18,12 @@ import os
 app = Flask(__name__)
 CORS(app)
 
+try:
+    criar_banco()
+    print("✅ Tabelas criadas/verificadas com sucesso!")
+except Exception as e:
+    print(f"❌ Erro ao criar tabelas: {e}")
+
 @app.route('/Lyria/conversar', methods=['POST'])
 def conversarSemConta():
     data = request.get_json()
