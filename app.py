@@ -150,8 +150,8 @@ def get_persona_escolhida_logado():
     except Exception as e:
         return jsonify({"erro": f"Erro ao buscar persona: {str(e)}"}), 500
 
-@app.route('/Lyria/PersonaEscolhida', methods=['POST'])
-def set_persona_escolhida_logado():
+@app.route('/Lyria/PersonaEscolhida', methods=['PUT'])
+def atualizar_persona_escolhida_logado():
     usuario = verificar_login()
     if not usuario:
         return jsonify({"erro": "Usuário não está logado"}), 401
@@ -165,8 +165,8 @@ def set_persona_escolhida_logado():
         return jsonify({"erro": "Persona inválida. Use 'professor', 'empresarial' ou 'social'"}), 400
 
     try:
-        escolherApersona(persona, usuario)
-        return jsonify({"sucesso": "Persona atualizada com sucesso"})
+        escolherApersona(persona, usuario) 
+        return jsonify({"sucesso": "Persona atualizada com sucesso"}), 200
     except Exception as e:
         return jsonify({"erro": f"Erro ao atualizar persona: {str(e)}"}), 500
 
