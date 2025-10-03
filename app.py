@@ -13,7 +13,7 @@ from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 
 # ---------------- CONFIGURAÇÃO DO APP ----------------
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'chave_default_super_secreta_mude_em_producao')
+app.secret_key = os.environ.get('SECRET_KEY', 'chave_default_secreta_mude_em_producao')
 
 # Configuração de sessão mais robusta
 app.config.update(
@@ -25,17 +25,16 @@ app.config.update(
 
 # CORS ajustado para aceitar localhost e permitir credentials
 CORS(app, 
-     resources={r"/Lyria/*": {
-         "origins": [
-             "http://localhost:5173", 
-             "http://localhost:3000",
-             # Quando fizer deploy do frontend, adicione o domínio aqui:
-             # "https://seu-dominio-frontend.vercel.app"
-         ],
-         "allow_headers": ["Content-Type", "Authorization"],
-         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-         "supports_credentials": True
-     }})
+    resources={r"/Lyria/*": {
+        "origins": [
+            "http://localhost:5173", 
+            "http://localhost:3000",
+            # "https://seu-dominio-frontend.vercel.app"
+        ],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "supports_credentials": True
+    }})
 
 # Inicializa banco
 try:
