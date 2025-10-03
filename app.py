@@ -13,23 +13,21 @@ from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 
 # ---------------- CONFIGURAÇÃO DO APP ----------------
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'chave_default_super_secreta_mude_em_producao')
+app.secret_key = os.environ.get('SECRET_KEY', 'chave_default_secreta_mude_em_producao')
 
-# Configuração de sessão mais robusta
 app.config.update(
     SESSION_COOKIE_SAMESITE="None",
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
-    PERMANENT_SESSION_LIFETIME=604800,  # 7 dias em segundos
+    PERMANENT_SESSION_LIFETIME=604800,  
 )
 
-# CORS ajustado para aceitar localhost e permitir credentials
 CORS(app, 
      resources={r"/Lyria/*": {
          "origins": [
              "http://localhost:5173", 
              "http://localhost:3000", 
-             "https://lyria-front.vercel.app",  # Adicione seu domínio frontend aqui
+             "https://lyria-front.vercel.app",  
              "https://lyria-back.onrender.com"
          ],
          "allow_headers": ["Content-Type", "Authorization"],
@@ -46,7 +44,6 @@ except Exception as e:
 
 # ---------------- FUNÇÕES AUXILIARES ----------------
 def verificar_login():
-    """Retorna o email do usuário logado ou None."""
     email = session.get('usuario_email')
     if email:
         print(f"✅ Usuário autenticado: {email}")
