@@ -128,6 +128,10 @@ def get_conversas_logado():
     
     try:
         conversas = carregar_conversas(usuario)
+        
+        if not conversas:
+            return jsonify({"conversas": []})  
+        
         return jsonify({"conversas": conversas})
     except Exception as e:
         return jsonify({"erro": f"Erro ao buscar conversas: {str(e)}"}), 500

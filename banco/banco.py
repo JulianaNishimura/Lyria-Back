@@ -177,9 +177,11 @@ def carregar_conversas(usuario, limite=12):
         ORDER BY m.criado_em ASC
         LIMIT %s
     """, (usuario, limite))
+    
     results = cursor.fetchall()
     conn.close()
-    return [{"pergunta": row["pergunta"], "resposta": row["resposta"]} for row in results]
+    
+    return [{"pergunta": row["pergunta"], "resposta": row["resposta"]} for row in results] if results else []
 
 def salvarMensagem(usuario, pergunta, resposta, modelo_usado=None, tokens=None):
     conn = psycopg2.connect(DB_URL)
