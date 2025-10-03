@@ -19,8 +19,14 @@ app.config.update(
     SESSION_COOKIE_SECURE=True
 )
 
-# Permitir CORS de qualquer origem
-CORS(app, resources={r"/Lyria/*": {"origins": lambda origin: origin}}, supports_credentials=True)
+# CORS ajustado para aceitar localhost e permitir credentials
+CORS(app, 
+     resources={r"/Lyria/*": {
+         "origins": ["http://localhost:5173", "http://localhost:3000", "https://lyria-back.onrender.com"],
+         "allow_headers": ["Content-Type", "Authorization"],
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "supports_credentials": True
+     }})
 
 # Inicializa banco
 try:
@@ -221,12 +227,16 @@ def get_usuario(usuarioEmail):
 # --- Personas disponíveis ---
 @app.route('/Lyria/personas', methods=['GET'])
 def listar_personas():
-    personas = {
-        "professor": "Persona professor",
-        "empresarial": "Persona empresarial",
-        "social": "Persona social"
-    }
-    return jsonify({"personas": personas})
+    try:
+        personas = {
+            "professor": "Persona professor",
+            "empresarial": "Persona empresarial",
+            "social": "Persona social"
+        }
+        return jsonify({"personas": personas}), 200
+    except Exception as e:
+        print(f"Erro em /Lyria/personas: {e}")
+        return jsonify({"erro": str(e)}), 500
 
 
 # ---------------- INÍCIO DO SERVIDOR ----------------
