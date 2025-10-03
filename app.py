@@ -13,16 +13,25 @@ from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 
 # ---------------- CONFIGURAÇÃO DO APP ----------------
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'chave_default')
+app.secret_key = os.environ.get('SECRET_KEY', 'chave_default_super_secreta_mude_em_producao')
+
+# Configuração de sessão mais robusta
 app.config.update(
     SESSION_COOKIE_SAMESITE="None",
-    SESSION_COOKIE_SECURE=True
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    PERMANENT_SESSION_LIFETIME=604800,  # 7 dias em segundos
 )
 
 # CORS ajustado para aceitar localhost e permitir credentials
 CORS(app, 
      resources={r"/Lyria/*": {
-         "origins": ["http://localhost:5173", "http://localhost:3000", "https://lyria-back.onrender.com"],
+         "origins": [
+             "http://localhost:5173", 
+             "http://localhost:3000", 
+             "https://lyria-front.vercel.app",  # Adicione seu domínio frontend aqui
+             "https://lyria-back.onrender.com"
+         ],
          "allow_headers": ["Content-Type", "Authorization"],
          "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          "supports_credentials": True
@@ -38,7 +47,12 @@ except Exception as e:
 # ---------------- FUNÇÕES AUXILIARES ----------------
 def verificar_login():
     """Retorna o email do usuário logado ou None."""
-    return session.get('usuario_email')
+    email = session.get('usuario_email')
+    if email:
+        print(f"✅ Usuário autenticado: {email}")
+    else:
+        print("❌ Nenhum usuário autenticado na sessão")
+    return email
 
 def validar_persona(persona):
     return persona in ['professor', 'empresarial', 'social']
@@ -63,11 +77,17 @@ def login():
         if usuario.get('senha_hash') and senha_hash != usuario['senha_hash']:
             return jsonify({"erro": "Senha incorreta"}), 401
 
+        # Configura a sessão
+        session.clear()  # Limpa qualquer sessão anterior
+        session.permanent = True  # Mantém a sessão ativa
         session.update({
             'usuario_email': usuario['email'],
             'usuario_nome': usuario['nome'],
             'usuario_id': usuario['id']
         })
+        
+        print(f"✅ Login bem-sucedido: {email}")
+        print(f"📦 Sessão criada: {dict(session)}")
 
         return jsonify({
             "status": "ok",
@@ -77,12 +97,15 @@ def login():
         })
 
     except Exception as e:
+        print(f"❌ Erro no login: {e}")
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
 
 
 @app.route('/Lyria/logout', methods=['POST'])
 def logout():
+    email = session.get('usuario_email')
     session.clear()
+    print(f"✅ Logout realizado: {email}")
     return jsonify({"status": "ok", "mensagem": "Logout realizado com sucesso"}), 200
 
 # --- Conversa ---
@@ -100,6 +123,7 @@ def conversar_sem_conta():
         resposta = perguntar_ollama(pergunta, None, None, persona, contexto_web)
         return jsonify({"resposta": resposta})
     except Exception as e:
+        print(f"❌ Erro em conversar_sem_conta: {e}")
         return jsonify({"erro": str(e)}), 500
 
 
@@ -107,6 +131,7 @@ def conversar_sem_conta():
 def conversar_logado():
     usuario = verificar_login()
     if not usuario:
+        print("❌ Tentativa de acesso não autorizado em /conversar-logado")
         return jsonify({"erro": "Usuário não está logado"}), 401
 
     data = request.get_json() or {}
@@ -129,6 +154,7 @@ def conversar_logado():
 
         return jsonify({"resposta": resposta})
     except Exception as e:
+        print(f"❌ Erro em conversar_logado: {e}")
         return jsonify({"erro": str(e)}), 500
 
 # --- Histórico e conversas ---
@@ -136,12 +162,14 @@ def conversar_logado():
 def get_conversas_logado():
     usuario = verificar_login()
     if not usuario:
+        print("❌ Tentativa de acesso não autorizado em /conversas")
         return jsonify({"erro": "Usuário não está logado"}), 401
 
     try:
         conversas = carregar_conversas(usuario)
         return jsonify({"conversas": conversas or []})
     except Exception as e:
+        print(f"❌ Erro em get_conversas_logado: {e}")
         return jsonify({"erro": str(e)}), 500
 
 
@@ -156,6 +184,7 @@ def get_historico_logado():
         historico = pegarHistorico(usuario, limite)
         return jsonify({"historico": historico})
     except Exception as e:
+        print(f"❌ Erro em get_historico_logado: {e}")
         return jsonify({"erro": str(e)}), 500
 
 # --- Persona ---
@@ -163,6 +192,7 @@ def get_historico_logado():
 def get_persona_logado():
     usuario = verificar_login()
     if not usuario:
+        print("❌ Tentativa de acesso não autorizado em /PersonaEscolhida GET")
         return jsonify({"erro": "Usuário não está logado"}), 401
 
     try:
@@ -171,6 +201,7 @@ def get_persona_logado():
             return jsonify({"persona": persona})
         return jsonify({"erro": "Usuário não encontrado"}), 404
     except Exception as e:
+        print(f"❌ Erro em get_persona_logado: {e}")
         return jsonify({"erro": str(e)}), 500
 
 
@@ -178,6 +209,7 @@ def get_persona_logado():
 def atualizar_persona_logado():
     usuario = verificar_login()
     if not usuario:
+        print("❌ Tentativa de acesso não autorizado em /PersonaEscolhida PUT")
         return jsonify({"erro": "Usuário não está logado"}), 401
 
     data = request.get_json() or {}
@@ -187,8 +219,10 @@ def atualizar_persona_logado():
 
     try:
         escolherApersona(persona, usuario)
+        print(f"✅ Persona atualizada para {persona} - usuário: {usuario}")
         return jsonify({"sucesso": "Persona atualizada com sucesso"})
     except Exception as e:
+        print(f"❌ Erro em atualizar_persona_logado: {e}")
         return jsonify({"erro": str(e)}), 500
 
 # --- Usuários ---
@@ -207,10 +241,12 @@ def criar_usuario_route():
 
     try:
         usuario_id = criarUsuario(nome, email, persona, senha_hash)
+        print(f"✅ Usuário criado: {email} com persona {persona}")
         return jsonify({"sucesso": "Usuário criado com sucesso", "id": usuario_id, "persona": persona}), 201
     except Exception as e:
         if "UNIQUE constraint" in str(e):
             return jsonify({"erro": "Usuário já existe"}), 409
+        print(f"❌ Erro em criar_usuario_route: {e}")
         return jsonify({"erro": str(e)}), 500
 
 
@@ -222,6 +258,7 @@ def get_usuario(usuarioEmail):
             return jsonify({"usuario": usuario})
         return jsonify({"erro": "Usuário não encontrado"}), 404
     except Exception as e:
+        print(f"❌ Erro em get_usuario: {e}")
         return jsonify({"erro": str(e)}), 500
 
 # --- Personas disponíveis ---
@@ -235,11 +272,24 @@ def listar_personas():
         }
         return jsonify({"personas": personas}), 200
     except Exception as e:
-        print(f"Erro em /Lyria/personas: {e}")
+        print(f"❌ Erro em /Lyria/personas: {e}")
         return jsonify({"erro": str(e)}), 500
+
+# --- Rota de verificação de sessão (útil para debugging) ---
+@app.route('/Lyria/check-session', methods=['GET'])
+def check_session():
+    usuario = verificar_login()
+    if usuario:
+        return jsonify({
+            "autenticado": True,
+            "usuario": session.get('usuario_nome'),
+            "email": usuario
+        })
+    return jsonify({"autenticado": False}), 401
 
 
 # ---------------- INÍCIO DO SERVIDOR ----------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+    print(f"🚀 Servidor iniciando na porta {port}")
     serve(app, host="0.0.0.0", port=port)
