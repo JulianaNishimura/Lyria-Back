@@ -22,13 +22,15 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sua_chave_secreta_aqui')
 app.config['SESSION_COOKIE_SAMESITE'] = "None"   
 app.config['SESSION_COOKIE_SECURE'] = True       
+from flask import request
+from flask_cors import CORS
+
+def origin_allow_all(origin):
+    return origin  # retorna a origem da requisição, aceitando qualquer uma
 
 CORS(
-    app, 
-    resources={r"/Lyria/*": {"origins": [
-        "http://10.110.12.27:5173",   
-        "https://seufront.onrender.com"  
-    ]}},
+    app,
+    resources={r"/Lyria/*": {"origins": origin_allow_all}},
     supports_credentials=True
 )
 
