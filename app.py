@@ -11,30 +11,36 @@ from banco.banco import (
 )
 from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 
-# ---------------- CONFIGURAÇÃO DO APP ----------------
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'chave_default_secreta_mude_em_producao')
 
-# Configuração de sessão mais robusta
+IS_PRODUCTION = os.environ.get('RENDER', False)
+
+# Sessão
 app.config.update(
-    SESSION_COOKIE_SAMESITE="None",
-    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SAMESITE="None",  # necessário para cross-domain
     SESSION_COOKIE_HTTPONLY=True,
-    PERMANENT_SESSION_LIFETIME=604800,  # 7 dias em segundos
+    SESSION_COOKIE_SECURE=IS_PRODUCTION,  # True no Render (HTTPS), False local
+    PERMANENT_SESSION_LIFETIME=604800  # 7 dias
 )
 
-# CORS ajustado para aceitar localhost e permitir credentials
+# CORS
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000"
+]
+
+if IS_PRODUCTION:
+    allowed_origins.append("https://seu-frontend.vercel.app")  # produção
+
 CORS(app, 
     resources={r"/Lyria/*": {
-        "origins": [
-            "http://localhost:5173", 
-            "http://localhost:3000",
-            # "https://seu-dominio-frontend.vercel.app"
-        ],
+        "origins": allowed_origins,
         "allow_headers": ["Content-Type", "Authorization"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "supports_credentials": True
-    }})
+    }}
+)
 
 # Inicializa banco
 try:
