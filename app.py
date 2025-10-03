@@ -31,7 +31,7 @@ allowed_origins = [
 ]
 
 if IS_PRODUCTION:
-    allowed_origins.append("https://seu-frontend.vercel.app")  # produção
+    allowed_origins.append("https://lyriafront.onrender.com")  # produção
 
 CORS(app, 
     resources={r"/Lyria/*": {
