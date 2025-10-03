@@ -23,17 +23,17 @@ app.config.update(
 )
 
 CORS(app, 
-     resources={r"/Lyria/*": {
-         "origins": [
-             "http://localhost:5173", 
-             "http://localhost:3000", 
-             "https://lyria-front.vercel.app",  
-             "https://lyria-back.onrender.com"
-         ],
-         "allow_headers": ["Content-Type", "Authorization"],
-         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-         "supports_credentials": True
-     }})
+    resources={r"/Lyria/*": {
+        "origins": [
+            "http://localhost:5173", 
+            "http://localhost:3000", 
+            "https://lyria-front.vercel.app",  
+            "https://lyria-back.onrender.com"
+        ],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "supports_credentials": True
+    }})
 
 # Inicializa banco
 try:
