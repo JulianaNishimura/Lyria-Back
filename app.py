@@ -13,27 +13,29 @@ from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 
 # ---------------- CONFIGURAÇÃO DO APP ----------------
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'chave_default_secreta_mude_em_producao')
+app.secret_key = os.environ.get('SECRET_KEY', 'chave_default_super_secreta_mude_em_producao')
 
+# Configuração de sessão mais robusta
 app.config.update(
     SESSION_COOKIE_SAMESITE="None",
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
-    PERMANENT_SESSION_LIFETIME=604800,  
+    PERMANENT_SESSION_LIFETIME=604800,  # 7 dias em segundos
 )
 
+# CORS ajustado para aceitar localhost e permitir credentials
 CORS(app, 
-    resources={r"/Lyria/*": {
-        "origins": [
-            "http://localhost:5173", 
-            "http://localhost:3000", 
-            "https://lyria-front.vercel.app",  
-            "https://lyria-back.onrender.com"
-        ],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "supports_credentials": True
-    }})
+     resources={r"/Lyria/*": {
+         "origins": [
+             "http://localhost:5173", 
+             "http://localhost:3000",
+             # Quando fizer deploy do frontend, adicione o domínio aqui:
+             # "https://seu-dominio-frontend.vercel.app"
+         ],
+         "allow_headers": ["Content-Type", "Authorization"],
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "supports_credentials": True
+     }})
 
 # Inicializa banco
 try:
@@ -44,6 +46,7 @@ except Exception as e:
 
 # ---------------- FUNÇÕES AUXILIARES ----------------
 def verificar_login():
+    """Retorna o email do usuário logado ou None."""
     email = session.get('usuario_email')
     if email:
         print(f"✅ Usuário autenticado: {email}")
@@ -275,14 +278,23 @@ def listar_personas():
 # --- Rota de verificação de sessão (útil para debugging) ---
 @app.route('/Lyria/check-session', methods=['GET'])
 def check_session():
+    print(f"📦 Headers recebidos: {dict(request.headers)}")
+    print(f"🍪 Cookies recebidos: {request.cookies}")
+    print(f"📋 Sessão atual: {dict(session)}")
+    
     usuario = verificar_login()
     if usuario:
         return jsonify({
             "autenticado": True,
             "usuario": session.get('usuario_nome'),
-            "email": usuario
+            "email": usuario,
+            "session_id": request.cookies.get('lyria_session', 'Não encontrado')
         })
-    return jsonify({"autenticado": False}), 401
+    return jsonify({
+        "autenticado": False,
+        "cookies_recebidos": list(request.cookies.keys()),
+        "mensagem": "Nenhuma sessão ativa"
+    }), 401
 
 
 # ---------------- INÍCIO DO SERVIDOR ----------------
