@@ -110,7 +110,7 @@ def carregar_memorias(usuario, limite=20):
 def pegarPersonaEscolhida(usuario):
     conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.execute("SELECT persona_escolhida FROM usuarios WHERE nome = %s", (usuario,))
+    cursor.execute("SELECT persona_escolhida FROM usuarios WHERE email = %s",(usuario))
     result = cursor.fetchone()
     conn.close()
     return result["persona_escolhida"] if result else None

@@ -82,9 +82,8 @@ def login():
         if usuario.get('senha_hash') and senha_hash != usuario['senha_hash']:
             return jsonify({"erro": "Senha incorreta"}), 401
 
-        # Configura a sessão
-        session.clear()  # Limpa qualquer sessão anterior
-        session.permanent = True  # Mantém a sessão ativa
+        session.clear()  
+        session.permanent = True 
         session.update({
             'usuario_email': usuario['email'],
             'usuario_nome': usuario['nome'],
@@ -203,7 +202,7 @@ def get_persona_logado():
     try:
         persona = pegarPersonaEscolhida(usuario)
         if persona:
-            return jsonify({"persona": persona})
+            return jsonify({"persona_escolhida": persona})
         return jsonify({"erro": "Usuário não encontrado"}), 404
     except Exception as e:
         print(f"❌ Erro em get_persona_logado: {e}")
