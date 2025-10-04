@@ -118,7 +118,7 @@ def pegarPersonaEscolhida(usuario):
 def escolherApersona(persona, usuario):
     conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor()
-    cursor.execute("UPDATE usuarios SET persona_escolhida = %s WHERE nome = %s", (persona, usuario))
+    cursor.execute("UPDATE usuarios SET persona_escolhida = %s WHERE email = %s", (persona, usuario))
     conn.commit()
     conn.close()
 
