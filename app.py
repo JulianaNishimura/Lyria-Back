@@ -130,9 +130,11 @@ def conversar_sem_conta():
         print(f"❌ Erro em conversar_sem_conta: {e}")
         return jsonify({"erro": str(e)}), 500
 
-
 @app.route('/Lyria/conversar-logado', methods=['POST'])
 def conversar_logado():
+    print(f"📋 Sessão recebida: {dict(session)}")
+    print(f"🍪 Cookies recebidos: {dict(request.cookies)}")
+    
     usuario = verificar_login()
     if not usuario:
         print("❌ Tentativa de acesso não autorizado em /conversar-logado")
@@ -144,23 +146,35 @@ def conversar_logado():
         return jsonify({"erro": "Campo 'pergunta' é obrigatório"}), 400
 
     try:
+        print(f"🔍 Buscando persona para usuário: {usuario}")
         persona_tipo = pegarPersonaEscolhida(usuario)
         if not persona_tipo:
             return jsonify({"erro": "Usuário não tem persona definida"}), 400
 
+        print(f"📚 Carregando conversas para usuário: {usuario}")
         conversas = carregar_conversas(usuario)
+        print(f"✅ Conversas carregadas: {len(conversas) if conversas else 0}")
+        
+        print(f"🧠 Carregando memórias para usuário: {usuario}")
         memorias = carregar_memorias(usuario)
+        print(f"✅ Memórias carregadas: {len(memorias) if memorias else 0}")
+        
         contexto_web = buscar_na_web(pergunta) if deve_buscar_na_web(pergunta) else None
+        
+        print(f"🎭 Obtendo texto da persona: {persona_tipo}")
         persona_texto = get_persona_texto(persona_tipo)
+        print(f"✅ Persona texto obtido: {persona_texto[:50]}..." if persona_texto else "❌ Persona texto vazio")
 
         resposta = perguntar_ollama(pergunta, conversas, memorias, persona_texto, contexto_web)
         salvarMensagem(usuario, pergunta, resposta, modelo_usado="hf", tokens=None)
 
         return jsonify({"resposta": resposta})
     except Exception as e:
-        print(f"❌ Erro em conversar_logado: {e}")
+        print(f"❌ Erro detalhado em conversar_logado: {str(e)}")
+        import traceback
+        print(f"❌ Traceback completo:\n{traceback.format_exc()}")
         return jsonify({"erro": str(e)}), 500
-
+    
 # --- Histórico e conversas ---
 @app.route('/Lyria/conversas', methods=['GET'])
 def get_conversas_logado():

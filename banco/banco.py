@@ -83,29 +83,33 @@ def criar_banco():
     conn.close()
 
 def carregar_memorias(usuario, limite=20):
-    conn = psycopg2.connect(DB_URL)
-    conn.autocommit = True
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.execute("""
-        SELECT ur.conteudo AS usuario_disse,
-               ar.conteudo AS ia_respondeu,
-               m.criado_em AS quando
-        FROM mensagens m
-        JOIN user_requests ur ON m.request_id = ur.id
-        JOIN ai_responses ar ON m.response_id = ar.id
-        JOIN conversas c ON m.conversa_id = c.id
-        JOIN usuarios u ON c.usuario_id = u.id
-        WHERE u.nome = %s
-        ORDER BY m.criado_em DESC
-        LIMIT %s
-    """, (usuario, limite))
-    results = cursor.fetchall()
-    conn.close()
-    memorias = []
-    for row in results:
-        memorias.append(f"Usuário: {row['usuario_disse']}")
-        memorias.append(f"IA: {row['ia_respondeu']}")
-    return list(reversed(memorias))
+    try:
+        conn = psycopg2.connect(DB_URL)
+        conn.autocommit = True
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute("""
+            SELECT ur.conteudo AS usuario_disse,
+                ar.conteudo AS ia_respondeu,
+                m.criado_em AS quando
+            FROM mensagens m
+            JOIN user_requests ur ON m.request_id = ur.id
+            JOIN ai_responses ar ON m.response_id = ar.id
+            JOIN conversas c ON m.conversa_id = c.id
+            JOIN usuarios u ON c.usuario_id = u.id
+            WHERE u.nome = %s
+            ORDER BY m.criado_em DESC
+            LIMIT %s
+        """, (usuario, limite))
+        results = cursor.fetchall()
+        conn.close()
+        memorias = []
+        for row in results:
+            memorias.append(f"Usuário: {row['usuario_disse']}")
+            memorias.append(f"IA: {row['ia_respondeu']}")
+        return list(reversed(memorias)) if memorias else []
+    except Exception as e:
+        print(f"⚠️ Erro ao carregar conversas: {e}")
+        return []
 
 def pegarPersonaEscolhida(usuario):
     conn = psycopg2.connect(DB_URL)
@@ -144,24 +148,28 @@ def procurarUsuarioPorEmail(usuarioEmail):
     return dict(result) if result else None
 
 def pegarHistorico(usuario, limite=3):
-    conn = psycopg2.connect(DB_URL)
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.execute("""
-        SELECT ur.conteudo AS pergunta,
-               ar.conteudo AS resposta,
-               m.criado_em AS timestamp
-        FROM mensagens m
-        JOIN user_requests ur ON m.request_id = ur.id
-        JOIN ai_responses ar ON m.response_id = ar.id
-        JOIN conversas c ON m.conversa_id = c.id
-        JOIN usuarios u ON c.usuario_id = u.id
-        WHERE u.nome = %s
-        ORDER BY m.criado_em DESC
-        LIMIT %s
-    """, (usuario, limite))
-    results = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in results]
+    try:
+        conn = psycopg2.connect(DB_URL)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute("""
+            SELECT ur.conteudo AS pergunta,
+                ar.conteudo AS resposta,
+                m.criado_em AS timestamp
+            FROM mensagens m
+            JOIN user_requests ur ON m.request_id = ur.id
+            JOIN ai_responses ar ON m.response_id = ar.id
+            JOIN conversas c ON m.conversa_id = c.id
+            JOIN usuarios u ON c.usuario_id = u.id
+            WHERE u.nome = %s
+            ORDER BY m.criado_em DESC
+            LIMIT %s
+        """, (usuario, limite))
+        results = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in results]
+    except Exception as e:
+        print(f"⚠️ Erro ao carregar memórias: {e}")
+        return []
 
 def carregar_conversas(usuario, limite=12):
     conn = psycopg2.connect(DB_URL)
