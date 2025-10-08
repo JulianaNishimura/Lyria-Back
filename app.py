@@ -12,7 +12,7 @@ from banco.banco import (
 from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'chave_default_secreta_mude_em_producao')
+app.secret_key = os.environ.get('SECRET_KEY')
 
 IS_PRODUCTION = os.environ.get('RENDER', False)
 
