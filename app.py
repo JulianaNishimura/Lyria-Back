@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from waitress import serve
-
+from flask_session import Session  
 from testeDaIa import perguntar_ollama, buscar_na_web, get_persona_texto
 from banco.banco import (
     criar_banco, criarUsuario, procurarUsuarioPorEmail,
@@ -16,33 +16,37 @@ app.secret_key = os.environ.get('SECRET_KEY', 'chave_default_secreta_mude_em_pro
 
 IS_PRODUCTION = os.environ.get('RENDER', False)
 
-# Sessão
 app.config.update(
-    SESSION_COOKIE_SAMESITE="None",  # necessário para cross-domain
+    SESSION_TYPE='filesystem',  
+    SESSION_COOKIE_NAME='lyria_session',
+    SESSION_COOKIE_SAMESITE='None' if IS_PRODUCTION else 'Lax',
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SECURE=IS_PRODUCTION,  # True no Render (HTTPS), False local
-    PERMANENT_SESSION_LIFETIME=604800  # 7 dias
+    SESSION_COOKIE_SECURE=IS_PRODUCTION,
+    SESSION_COOKIE_PATH='/',
+    SESSION_COOKIE_DOMAIN=None,  
+    PERMANENT_SESSION_LIFETIME=604800
 )
 
-# CORS
+Session(app)
+
 allowed_origins = [
     "http://localhost:5173",
     "http://localhost:3000"
 ]
 
 if IS_PRODUCTION:
-    allowed_origins.append("https://lyriafront.onrender.com")  # produção
+    allowed_origins.append("https://lyriafront.onrender.com")
 
 CORS(app, 
-    resources={r"/Lyria/*": {
+    resources={r"/*": {
         "origins": allowed_origins,
         "allow_headers": ["Content-Type", "Authorization"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "supports_credentials": True
+        "supports_credentials": True,
+        "expose_headers": ["Set-Cookie"]
     }}
 )
 
-# Inicializa banco
 try:
     criar_banco()
     print("✅ Tabelas criadas/verificadas com sucesso!")
@@ -63,10 +67,11 @@ def validar_persona(persona):
     return persona in ['professor', 'empresarial', 'social']
 
 # ---------------- ROTAS ----------------
-
-# --- Autenticação ---
 @app.route('/Lyria/login', methods=['POST'])
 def login():
+    print(f"   Origin: {request.headers.get('Origin')}")
+    print(f"   Cookies recebidos: {dict(request.cookies)}")
+    
     data = request.get_json() or {}
     email = data.get('email')
     senha_hash = data.get('senha_hash')
@@ -84,26 +89,32 @@ def login():
 
         session.clear()  
         session.permanent = True 
-        session.update({
-            'usuario_email': usuario['email'],
-            'usuario_nome': usuario['nome'],
-            'usuario_id': usuario['id']
-        })
+        session['usuario_email'] = usuario['email']
+        session['usuario_nome'] = usuario['nome']
+        session['usuario_id'] = usuario['id']
         
-        print(f"✅ Login bem-sucedido: {email}")
-        print(f"📦 Sessão criada: {dict(session)}")
+        session.modified = True
+        
+        print(f"✅ Sessão criada:")
+        print(f"   Email: {session.get('usuario_email')}")
+        print(f"   Nome: {session.get('usuario_nome')}")
+        print(f"   ID: {session.get('usuario_id')}")
+        print(f"{'='*60}\n")
 
-        return jsonify({
+        response = jsonify({
             "status": "ok",
             "mensagem": "Login realizado com sucesso",
             "usuario": usuario['nome'],
             "persona": usuario.get('persona_escolhida')
         })
+        
+        return response
 
     except Exception as e:
         print(f"❌ Erro no login: {e}")
+        import traceback
+        print(traceback.format_exc())
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
-
 
 @app.route('/Lyria/logout', methods=['POST'])
 def logout():
