@@ -14,6 +14,8 @@ from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
 
+IS_PRODUCTION = os.environ.get('RENDER', False)
+
 app.config.update(
     SESSION_TYPE='filesystem',  
     SESSION_COOKIE_NAME='lyria_session',
@@ -29,9 +31,11 @@ Session(app)
 
 allowed_origins = [
     "http://localhost:5173",
-    "http://localhost:3000",
-    "https://lyriafront.onrender.com"
+    "http://localhost:3000"
 ]
+
+if IS_PRODUCTION:
+    allowed_origins.append("https://lyriafront.onrender.com")
 
 CORS(app, 
     resources={r"/*": {
