@@ -181,3 +181,378 @@ pergunta,rótulo
 "A maçã é de que cor?",0
 "Quem é o papa atualmente?",1
 "Quando o Silvio Santos morreu?",1
+"Quem é o Alanzoka?",1
+"Quem é mais rápido, o tigre ou o leão?",1
+"Qual a cotação atual da bolsa de valores?",1
+"Quem são os líderes do campeonato de Fórmula 1 de 2025?",1
+"Quais são os lançamentos de jogos para o PlayStation 5 este mês?",1
+"Qual a previsão do tempo para Nova York amanhã?",1
+"Quem é o atual CEO da OpenAI?",1
+"Qual o resultado do sorteio da Loteria Federal de hoje?",1
+"Quem ganhou o Oscar de Melhor Filme no ano passado?",1
+"Quais são as últimas notícias sobre a política no Brasil?",1
+"Qual o preço do barril de petróleo hoje?",1
+"Quais são os times classificados para a final da Copa do Brasil 2025?",1
+"Quem foi o último vencedor do prêmio Puskás?",1
+"Quais são os artistas mais ouvidos no Spotify esta semana?",1
+"Qual é o preço do Bitcoin agora?",1
+"Onde será a próxima Copa do Mundo de Futebol?",1
+"Quais são as notícias de tecnologia mais recentes?",1
+"Quem é o atual líder de bilheteria nos cinemas?",1
+"O que é a lei da oferta e demanda?",0
+"Quem foi o autor da teoria da evolução?",0
+"O que é a fotossíntese?",0
+"Qual é a capital da China?",0
+"Quem escreveu 'Hamlet'?",0
+"Qual a fórmula da água?",0
+"O que é o Teorema de Pitágoras?",0
+"Quais são os três estados da matéria?",0
+"Quem foi o primeiro presidente dos EUA?",0
+"O que é um buraco negro?",0
+"Qual a diferença entre clima e tempo?",0
+"Quem inventou a lâmpada?",0
+"O que é a Teoria da Relatividade?",0
+"Quais são os planetas do Sistema Solar?",0
+"O que é a Guerra Fria?",0
+"Qual é a função da clorofila nas plantas?",0
+"Quem foi Leonardo da Vinci?",0
+"O que é o efeito estufa?",0
+"Qual é a capital da Alemanha?",0
+"O que foi a Revolução Francesa?",0
+"Quantos ossos tem o corpo humano adulto?",0
+"O que é um algoritmo?",0
+"Qual é o maior oceano do mundo?",0
+"Quais são as causas e efeitos da Primeira Guerra Mundial?",0
+"Qual é a cotação atual do euro?", 1
+"Quem ganhou o campeonato brasileiro de 2024?", 1
+"Quais são as notícias de tecnologia de hoje?", 1
+"Qual é a previsão do tempo para São Carlos amanhã?", 1
+"Quando será o próximo feriado nacional?", 1
+"Quais empresas estão contratando analistas de sistemas em 2025?", 1
+"Quanto está o preço do barril de petróleo hoje?", 1
+"Quem é o atual presidente da Petrobras?", 1
+"Quais foram as últimas atualizações do Android?", 1
+"Qual o resultado do jogo do Corinthians ontem?", 1
+"Quais são as tendências de moda em 2025?", 1
+"Qual é o ranking das universidades brasileiras mais recentes?", 1
+"Quais voos estão atrasados no aeroporto de Congonhas agora?", 1
+"Quanto está valendo o bitcoin hoje?", 1
+"Qual é o número atual de casos de dengue no Brasil?", 1
+"O que é inteligência artificial?", 0
+"Como funciona o aprendizado de máquina?", 0
+"O que significa API?", 0
+"Qual a diferença entre frontend e backend?", 0
+"O que faz um analista de sistemas?", 0
+"O que é um banco de dados relacional?", 0
+"Como funciona a internet?", 0
+"Qual a função do sistema operacional?", 0
+"O que é programação orientada a objetos?", 0
+"Como funciona uma rede neural?", 0
+"O que é JavaScript?", 0
+"O que é uma variável em programação?", 0
+"Como funciona a criptografia de dados?", 0
+"O que é uma requisição HTTP?", 0
+"O que é um servidor web?", 0
+"Qual é o preço da gasolina hoje em São Paulo?", 1
+"Quem é o atual ministro da economia do Brasil?", 1
+"Quais são as últimas notícias sobre a inteligência artificial?", 1
+"Qual é a temperatura agora em Brasília?", 1
+"Quando será o próximo eclipse solar?", 1
+"Quem venceu o Oscar de melhor filme em 2025?", 1
+"Qual time está liderando o campeonato inglês neste momento?", 1
+"Quais foram as novidades apresentadas no último evento da Apple?", 1
+"Quantas pessoas estão desempregadas no Brasil atualmente?", 1
+"Quando será lançada a nova versão do iPhone?", 1
+"Quem é o atual prefeito de São Paulo?", 1
+"Quais foram os resultados das eleições municipais de 2024?", 1
+"Qual é o valor atual do salário mínimo?", 1
+"Quais séries estão em alta na Netflix este mês?", 1
+"Qual é o número de habitantes no Brasil em 2025?", 1
+"Quem ganhou o Grammy de melhor artista do ano?", 1
+"Quais países estão participando da COP sobre o clima neste ano?", 1
+"Quais são as previsões econômicas para o Brasil em 2025?", 1
+"Quem é o atual CEO da OpenAI?", 1
+"Qual é o índice de inflação atual no Brasil?", 1
+"Quais foram os destaques da Bolsa de Valores hoje?", 1
+"Quem venceu a Copa do Mundo de 2022?", 1
+"Quais são as notícias sobre o mercado de tecnologia hoje?", 1
+"Qual foi o último lançamento da Tesla?", 1
+"Quando será o próximo feriado prolongado?", 1
+"Qual é o valor do dólar comercial agora?", 1
+"Quem é o presidente dos Estados Unidos atualmente?", 1
+"Qual é a taxa de juros atual do Banco Central?", 1
+"Quais filmes estão em cartaz nos cinemas esta semana?", 1
+"Quando começa o inverno em 2025?", 1
+"O que é computação em nuvem?", 0
+"Como funciona um banco de dados não relacional?", 0
+"O que é o protocolo HTTPS?", 0
+"Qual é a diferença entre compilador e interpretador?", 0
+"O que é uma função recursiva?", 0
+"Como funciona o ciclo de vida de um software?", 0
+"O que é o modelo MVC?", 0
+"O que significa API REST?", 0
+"O que é versionamento de código?", 0
+"Como funciona o Git?", 0
+"O que é uma variável global?", 0
+"Como funcionam os cookies em um site?", 0
+"O que é autenticação de dois fatores?", 0
+"O que significa CRUD?", 0
+"O que é uma linguagem de programação de alto nível?", 0
+"O que é um algoritmo de busca binária?", 0
+"Como funciona o protocolo TCP/IP?", 0
+"O que é JSON?", 0
+"O que é um endpoint?", 0
+"Como funciona o encapsulamento em POO?", 0
+"O que é herança em Java?", 0
+"Qual a diferença entre classe e objeto?", 0
+"O que é um framework?", 0
+"O que é o Node.js?", 0
+"O que significa o termo full stack?", 0
+"O que é uma query SQL?", 0
+"O que é um trigger no banco de dados?", 0
+"O que é um join em SQL?", 0
+"O que é o DOM no JavaScript?", 0
+"Como funciona o controle de versão no GitHub?", 0
+"Quem é o atual Secretário-Geral da ONU?",1
+"Qual é a previsão do tempo para a próxima semana em Manaus?",1
+"Qual o resultado do jogo de hoje da NBA?",1
+"Quais são os principais lançamentos da Apple para o próximo ano?",1
+"Quem é o novo técnico da seleção brasileira de futebol?",1
+"Qual é a cotação do euro hoje?",1
+"Quais são os filmes mais assistidos na Netflix esta semana?",1
+"Quem venceu o último torneio de tênis de Wimbledon?",1
+"Quais são as notícias mais recentes sobre a guerra na Ucrânia?",1
+"Qual o preço do ouro no mercado internacional?",1
+"Quando será o próximo eclipse lunar total?",1
+"Quem foi a primeira pessoa a viajar para o espaço?",0
+"O que é a fotossíntese nas plantas?",0
+"Qual é a capital da Austrália?",0
+"Quem pintou a 'Noite Estrelada'?",0
+"Como funciona o motor de um carro a combustão?",0
+"O que é a gravidade?",0
+"Quem escreveu a 'Odisseia'?",0
+"Qual é o maior animal do mundo?",0
+"O que é a mitose?",0
+"Quem foi o imperador romano Júlio César?",0
+"Qual é o rio mais longo do mundo?",0
+"O que é um buraco negro?",0
+"Quem descobriu a América?",0
+"Qual é a fórmula da área de um círculo?",0
+"O que é a teoria da evolução?",0
+"Quem foi o primeiro presidente do Brasil?",0
+"Qual é a moeda da China?",0
+"O que é o Big Bang?",0
+"Quem inventou a Internet?",0
+"O que é o capitalismo?",0
+"Qual é a temperatura de ebulição da água?",0
+"Quem fundou a Amazon?",0
+"O que é o DNA?",0
+"Qual o país mais populoso do mundo?",0
+"Quem foi Martin Luther King Jr.?",0
+"Qual a diferença entre um átomo e uma molécula?",0
+"O que é a Segunda Guerra Mundial?",0
+"Qual o preço do arroz hoje no Brasil?", 1
+"Quem é o técnico atual da seleção brasileira?", 1
+"Quais são as notícias de política de hoje?", 1
+"Quando sai o novo modelo do PlayStation?", 1
+"Quem está liderando o campeonato paulista?", 1
+"Qual é a cotação do ouro agora?", 1
+"Quais foram os vencedores do The Game Awards 2024?", 1
+"Quantos casos de covid foram registrados essa semana?", 1
+"Quem ganhou o último jogo do Flamengo?", 1
+"Qual é o horário do pôr do sol em São Carlos hoje?", 1
+"Quando vai ser lançado o GTA 6?", 1
+"Quais são as previsões do tempo pro fim de semana?", 1
+"Quem é o atual governador de São Paulo?", 1
+"Quais são as novidades da Samsung em 2025?", 1
+"Quanto está custando o litro da gasolina em SP?", 1
+"Quais são os filmes indicados ao Oscar deste ano?", 1
+"Quem venceu a corrida de Fórmula 1 no último domingo?", 1
+"Qual é a nota de corte do SISU 2025 para ADS?", 1
+"Quando abre o período de matrícula do IFSP?", 1
+"Quais empresas estão contratando desenvolvedores agora?", 1
+"Quem é o novo CEO da Google?", 1
+"Qual é o preço atual do dólar turismo?", 1
+"Quais países estão em guerra neste momento?", 1
+"Qual é o número de habitantes de São Carlos em 2025?", 1
+"Quem ganhou o campeonato europeu de futebol?", 1
+"Quais foram as mudanças na lei trabalhista em 2025?", 1
+"Quais são os filmes mais assistidos da Netflix hoje?", 1
+"Quem são os candidatos à presidência do Brasil?", 1
+"Quando é o próximo eclipse lunar?", 1
+"Quais eventos tecnológicos acontecem em 2025?", 1
+"Qual é o valor da taxa Selic hoje?", 1
+"Quem é o cantor mais ouvido no Spotify em 2025?", 1
+"Quais as principais notícias de economia agora?", 1
+"Qual é o número atual da cotação do euro?", 1
+"Quem é o atual papa?", 1
+"Quando vai ser o próximo feriado prolongado em São Paulo?", 1
+"Qual é o valor da cesta básica neste mês?", 1
+"Quais foram as últimas atualizações do Windows?", 1
+"Quem ganhou o último prêmio Nobel da Paz?", 1
+"Quando começa o horário de verão?", 1
+"Quais países participam da ONU hoje?", 1
+"Quem é o atual presidente da França?", 1
+"Qual é o preço médio do aluguel em São Paulo?", 1
+"Quais são as taxas de desemprego em 2025?", 1
+"Quem ganhou a Copa América mais recente?", 1
+"Quando será o próximo concurso público do IFSP?", 1
+"Qual é o balanço financeiro da Petrobras neste trimestre?", 1
+"Quem foi eleito o jogador do ano pela FIFA?", 1
+"Qual o valor da passagem de ônibus em São Carlos?", 1
+"Quem é o atual diretor do Banco Central?", 1
+"Qual o ranking mundial de universidades em 2025?", 1
+"Quais são os aplicativos mais baixados este mês?", 1
+"Quem venceu o campeonato mundial de xadrez em 2024?", 1
+"Quando sai o próximo episódio de One Piece?", 1
+"Quem é o atual presidente da Argentina?", 1
+"Quais são as novidades do Android 15?", 1
+"Qual é a inflação acumulada do ano até agora?", 1
+"Quem ganhou o último campeonato de vôlei feminino?", 1
+"Quais foram as descobertas científicas mais recentes?", 1
+"Quando será o próximo Enem?", 1
+"Qual é o preço da carne hoje no mercado?", 1
+"Quem é o novo técnico do Corinthians?", 1
+"Quais foram as principais notícias sobre o clima hoje?", 1
+"Qual é o preço médio da energia elétrica em 2025?", 1
+"Quem está em primeiro lugar nas paradas musicais?", 1
+"Quando será o próximo lançamento da SpaceX?", 1
+"Qual o número atual de alunos matriculados no IFSP?", 1
+"Quem é o ministro da educação em 2025?", 1
+"Quais são os principais eventos esportivos deste ano?", 1
+"Quem ganhou o campeonato de basquete da NBA?", 1
+"Qual é o preço do barril de petróleo atualmente?", 1
+"Quando começam as Olimpíadas de 2028?", 1
+"Quais são as novas regras do Enem 2025?", 1
+"Quem é o atual secretário de saúde do Brasil?", 1
+"Quais séries estão sendo mais comentadas hoje?", 1
+"Quem são os novos deputados federais eleitos?", 1
+"Quando vai ser o próximo eclipse solar?", 1
+"Qual o valor do IPCA acumulado em 2025?", 1
+"Quem é o atual presidente da ONU?", 1
+"Quais são os resultados da Mega Sena dessa semana?", 1
+"Qual é o preço médio do leite em 2025?", 1
+"Quando foi inaugurado o novo campus do IFSP?", 1
+"Quem é o atual campeão da Champions League?", 1
+"Quais foram os principais avanços da IA neste ano?", 1
+"Quem ganhou o último prêmio de inovação tecnológica?", 1
+"Qual é o número atual da taxa de desemprego no Brasil?", 1
+"Quando será o próximo feriado nacional?", 1
+"Quem é o atual presidente da Câmara dos Deputados?", 1
+"Quais cidades estão com alerta de chuva forte hoje?", 1
+"Quem foi o vencedor do último Big Brother Brasil?", 1
+"Qual é o valor do bitcoin agora?", 1
+"Quem é o atual governador do Rio de Janeiro?", 1
+"Quais empresas estão oferecendo vagas de estágio em TI?", 1
+"Quem venceu a última Copa do Mundo feminina?", 1
+"Qual é o preço do café hoje?", 1
+"Quais foram as mudanças nas regras do imposto de renda 2025?", 1
+"Quem é o novo reitor do IFSP?", 1
+"Quais as principais notícias internacionais do dia?", 1
+"O que é HTML?", 0
+"Como funciona o CSS?", 0
+"O que é um loop for?", 0
+"O que significa JSON?", 0
+"O que é um banco de dados?", 0
+"Como funciona o DNS?", 0
+"O que é uma API pública?", 0
+"O que é um endpoint em REST?", 0
+"Como funciona um compilador?", 0
+"O que é herança em programação?", 0
+"O que é um servidor local?", 0
+"O que significa ORM?", 0
+"O que é uma função anônima?", 0
+"Como funciona a memória RAM?", 0
+"O que é uma thread em Java?", 0
+"O que significa IDE?", 0
+"O que é um framework web?", 0
+"O que é versionamento de software?", 0
+"Como funciona o protocolo HTTP?", 0
+"O que é uma requisição POST?", 0
+"O que é uma variável booleana?", 0
+"O que significa sintaxe em programação?", 0
+"Como funciona a recursão?", 0
+"O que é encapsulamento?", 0
+"O que é um objeto em programação?", 0
+"O que é POO?", 0
+"O que é o paradigma funcional?", 0
+"O que significa linguagem interpretada?", 0
+"O que é um algoritmo?", 0
+"O que é pseudocódigo?", 0
+"O que é um banco NoSQL?", 0
+"O que significa SQL?", 0
+"O que é uma constraint em SQL?", 0
+"O que é uma trigger?", 0
+"O que é um procedimento armazenado?", 0
+"O que é indexação no banco de dados?", 0
+"Como funciona a chave primária?", 0
+"O que é um modelo entidade-relacionamento?", 0
+"O que é normalização de dados?", 0
+"O que é autenticação JWT?", 0
+"O que é cache?", 0
+"O que é uma promise no JavaScript?", 0
+"O que é o DOM?", 0
+"O que é uma arrow function?", 0
+"O que é callback?", 0
+"Como funciona o async e await?", 0
+"O que é um módulo em Node.js?", 0
+"O que significa npm?", 0
+"O que é um servidor HTTP?", 0
+"O que é RESTful API?", 0
+"O que é o Express.js?", 0
+"O que é o React?", 0
+"O que é o JSX?", 0
+"O que é o Tailwind CSS?", 0
+"O que é uma rota em um sistema web?", 0
+"O que significa CRUD?", 0
+"O que é o MVC?", 0
+"O que é o padrão DAO?", 0
+"O que é a camada de serviço?", 0
+"O que é um DTO?", 0
+"O que é uma entidade em um sistema?", 0
+"O que é a camada de repositório?", 0
+"O que é um teste unitário?", 0
+"O que é mocking?", 0
+"O que é TDD?", 0
+"O que é uma pipeline de CI/CD?", 0
+"O que significa deploy?", 0
+"O que é containerização?", 0
+"O que é Docker?", 0
+"O que é Kubernetes?", 0
+"O que é uma API GraphQL?", 0
+"O que é um websocket?", 0
+"O que significa serialização?", 0
+"O que é JSON.stringify?", 0
+"O que é parse em programação?", 0
+"O que é uma exceção?", 0
+"O que significa try catch?", 0
+"O que é um stack trace?", 0
+"O que é um bug?", 0
+"O que é debugging?", 0
+"O que é um sistema operacional?", 0
+"O que é uma thread?", 0
+"O que é concorrência?", 0
+"O que é paralelismo?", 0
+"O que é uma API de voz?", 0
+"O que é aprendizado supervisionado?", 0
+"O que é rede neural convolucional?", 0
+"O que é machine learning?", 0
+"O que é deep learning?", 0
+"O que é tokenização de texto?", 0
+"O que significa NLP?", 0
+"O que é o TensorFlow?", 0
+"O que é IA generativa?", 0
+"O que é um modelo de linguagem?", 0
+"O que é prompt engineering?", 0
+"O que é Python?", 0
+"O que é Java?", 0
+"O que é JavaScript?", 0
+"O que é uma IDE?", 0
+"O que é código aberto?", 0
+"O que significa compilação?", 0
+"O que é variável local?", 0
+"O que é escopo?", 0
+"O que é sintaxe?", 0
+"O que é um script?", 0
+"O que é uma função recursiva?", 0
+"O que é estrutura de dados?", 0
