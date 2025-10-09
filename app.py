@@ -12,39 +12,59 @@ from banco.banco import (
 from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY')
 
-IS_PRODUCTION = os.environ.get('RENDER', False)
+# SECRET_KEY obrigatória
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("❌ SECRET_KEY não configurada!")
 
+app.secret_key = SECRET_KEY
+
+IS_PRODUCTION = bool(os.environ.get('RENDER'))  # ✅ Corrigido
+
+print(f"🔒 Modo: {'PRODUÇÃO' if IS_PRODUCTION else 'DESENVOLVIMENTO'}")
+print(f"🔑 SECRET_KEY configurada: {SECRET_KEY[:10]}...")  # ✅ Mostra só o início
+
+# Configuração de sessão OTIMIZADA para cross-site
 app.config.update(
-    SESSION_TYPE='filesystem',  
     SESSION_COOKIE_NAME='lyria_session',
-    SESSION_COOKIE_SAMESITE='None' if IS_PRODUCTION else 'Lax',
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SECURE=IS_PRODUCTION,
+    SESSION_COOKIE_DOMAIN=None,
     SESSION_COOKIE_PATH='/',
-    SESSION_COOKIE_DOMAIN=None,  
-    PERMANENT_SESSION_LIFETIME=604800
+    SESSION_COOKIE_SAMESITE='None' if IS_PRODUCTION else 'Lax',
+    SESSION_COOKIE_SECURE=IS_PRODUCTION,
+    SESSION_COOKIE_HTTPONLY=True,
+    PERMANENT_SESSION_LIFETIME=604800,
+    SESSION_REFRESH_EACH_REQUEST=False
 )
 
-Session(app)
+# CORS - Função de validação
+def is_allowed_origin(origin):
+    if not origin:
+        return False
+    
+    allowed = [
+        "https://lyriafront.onrender.com"
+    ]
+    
+    # Dev: aceita qualquer localhost
+    if not IS_PRODUCTION:
+        if origin.startswith('http://localhost') or origin.startswith('http://127.0.0.1'):
+            return True
+    
+    return origin in allowed
 
-allowed_origins = [
-    "http://localhost:5173",
-    "http://localhost:3000"
-]
-
-if IS_PRODUCTION:
-    allowed_origins.append("https://lyriafront.onrender.com")
-
-CORS(app, 
-    resources={r"/*": {
-        "origins": allowed_origins,
-        "allow_headers": ["Content-Type", "Authorization"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "supports_credentials": True,
-        "expose_headers": ["Set-Cookie"]
-    }}
+# CORS
+CORS(app,
+    supports_credentials=True,
+    resources={
+        r"/*": {
+            "origins": lambda origin: is_allowed_origin(origin),
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "Cookie"],
+            "expose_headers": ["Set-Cookie"],
+            "max_age": 3600
+        }
+    }
 )
 
 try:
