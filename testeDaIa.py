@@ -193,7 +193,7 @@ def chamar_hf_inference(prompt, max_new_tokens=400, temperature=0.3):
     }
 
     payload = {
-        "inputs": prompt[:2000],  # Limite maior para contexto
+        "inputs": prompt[:2000], 
         "parameters": {
             "max_new_tokens": max_new_tokens,
             "temperature": temperature,
@@ -246,7 +246,6 @@ def gerar_resposta_offline(prompt):
     
     pergunta_lower = pergunta.lower()
     
-    # Respostas mais específicas
     if any(word in pergunta_lower for word in ["como", "fazer", "tutorial"]):
         return "Para isso, você pode começar com alguns passos básicos. Me dê mais detalhes e posso orientar melhor."
     
@@ -264,7 +263,6 @@ def gerar_resposta_offline(prompt):
     
     return f"Entendi sua pergunta sobre '{pergunta[:50]}...' mas estou com problemas técnicos. Pode tentar reformular ou aguardar alguns minutos?"
 
-# Configuração das variáveis
 SERPAPI_KEY = os.getenv("KEY_SERP_API")
 HUGGING_FACE_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -276,7 +274,6 @@ def carregar_memorias(usuario):
 def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None):
     print(f"\n🤖 Processando pergunta: {pergunta[:50]}...")
     
-    # Prompt otimizado
     if 'professor' in persona.lower():
         intro = """
         MODO: EDUCACIONAL
@@ -384,19 +381,49 @@ def perguntar_ollama(pergunta, conversas, memorias, persona, contexto_web=None):
     prompt_parts = [intro]
     
     if conversas and len(conversas) > 0:
-        ultima = conversas[-1]
-        prompt_parts.append(f"\nContexto: {ultima.get('pergunta', '')[:30]} | {ultima.get('resposta', '')[:30]}")
+        prompt_parts.append("\n\n=== HISTÓRICO DA CONVERSA ===")
+        ultimas_conversas = conversas[-10:] if len(conversas) > 10 else conversas
+        
+        for i, conv in enumerate(ultimas_conversas, 1):
+            pergunta_anterior = conv.get('pergunta', '')[:300] 
+            resposta_anterior = conv.get('resposta', '')[:300]  
+            
+            prompt_parts.append(f"\n[Conversa {i}]")
+            prompt_parts.append(f"\nUsuário: {pergunta_anterior}")
+            prompt_parts.append(f"\nLyria: {resposta_anterior}")
+        
+        prompt_parts.append("\n=== FIM DO HISTÓRICO ===\n")
+        print(f"📚 Incluídas {len(ultimas_conversas)} conversas anteriores no contexto")
+    
+    if memorias and len(memorias) > 0:
+        prompt_parts.append("\n=== MEMÓRIAS RELEVANTES ===")
+        ultimas_memorias = memorias[-10:] if len(memorias) > 10 else memorias
+        
+        for memoria in ultimas_memorias:
+            if len(memoria) > 10:  
+                prompt_parts.append(f"\n{memoria[:200]}") 
+        
+        prompt_parts.append("\n=== FIM DAS MEMÓRIAS ===\n")
+        print(f"🧠 Incluídas {len(ultimas_memorias)} memórias no contexto")
     
     if contexto_web:
-        prompt_parts.append(f"\nInfo atual: {contexto_web[:80]}")
+        prompt_parts.append(f"\n=== INFORMAÇÃO ATUALIZADA DA WEB ===")
+        prompt_parts.append(f"\n{contexto_web[:400]}")  
+        prompt_parts.append(f"\n=== FIM DA INFORMAÇÃO DA WEB ===\n")
+        print(f"🌐 Contexto web incluído ({len(contexto_web)} caracteres)")
     
+    prompt_parts.append(f"\n\n=== PERGUNTA ATUAL ===")
     prompt_parts.append(f"\nUsuário: {pergunta}")
-    prompt_parts.append("\nLyria:")
+    prompt_parts.append("\n\nLyria:")
     
     prompt_final = "".join(prompt_parts)
-    print(f"📝 Prompt final: {len(prompt_final)} caracteres")
     
-    resposta = chamar_hf_inference(prompt_final)
+    print(f"📝 Prompt final: {len(prompt_final)} caracteres")
+    print(f"   - Conversas: {len(conversas) if conversas else 0}")
+    print(f"   - Memórias: {len(memorias) if memorias else 0}")
+    print(f"   - Web: {'Sim' if contexto_web else 'Não'}")
+    
+    resposta = chamar_hf_inference(prompt_final, max_new_tokens=600)
     print(f"💬 Resposta gerada: {len(resposta) if resposta else 0} caracteres")
     
     return resposta
