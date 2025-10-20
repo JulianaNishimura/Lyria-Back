@@ -174,7 +174,8 @@ def pegarHistorico(usuario_email, limite=3):
         conn = psycopg2.connect(DB_URL)
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute("""
-            SELECT ur.conteudo AS pergunta,
+            SELECT m.id AS id_historico,
+                ur.conteudo AS pergunta,
                 ar.conteudo AS resposta,
                 m.criado_em AS timestamp
             FROM mensagens m
