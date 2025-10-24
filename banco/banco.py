@@ -131,13 +131,15 @@ def carregar_conversas(usuario_email, limite=12):
     conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute("""
-        SELECT ur.conteudo AS pergunta, ar.conteudo AS resposta
+        SELECT c.id AS conversa_id,
+        ur.conteudo AS pergunta,
+        ar.conteudo AS resposta
         FROM mensagens m
         JOIN user_requests ur ON m.request_id = ur.id
         JOIN ai_responses ar ON m.response_id = ar.id
         JOIN conversas c ON m.conversa_id = c.id
         JOIN usuarios u ON c.usuario_id = u.id
-        WHERE u.email = %s  -- ✅ CORRIGIDO
+        WHERE u.email = %s
         ORDER BY m.criado_em ASC
         LIMIT %s
     """, (usuario_email, limite))
@@ -145,8 +147,10 @@ def carregar_conversas(usuario_email, limite=12):
     results = cursor.fetchall()
     conn.close()
     
-    return [{"pergunta": row["pergunta"], "resposta": row["resposta"]} for row in results] if results else []
-
+    return [
+        {"conversa_id": row["conversa_id"], "pergunta": row["pergunta"], "resposta": row["resposta"]}
+        for row in results
+    ] if results else []
 
 def carregar_memorias(usuario_email, limite=20):
     try:
