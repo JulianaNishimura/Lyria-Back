@@ -35,7 +35,6 @@ def verificar_configuracao():
     return True
 
 def testar_groq_api():
-    """Testa se a Groq API está funcionando"""
     groq_key = os.getenv("GROQ_API_KEY")
     if not groq_key:
         print("❌ GROQ: Chave não configurada")
@@ -85,7 +84,6 @@ def testar_groq_api():
         return False
 
 def testar_hf_api():
-    """Testa se a HF API está funcionando"""
     hf_key = os.getenv("HUGGING_FACE_API_KEY")
     if not hf_key:
         print("❌ HF: Chave não configurada")
@@ -104,7 +102,7 @@ def testar_hf_api():
     
     try:
         print("🧪 HF: Testando conexão...")
-        resp = requests.post("https://api-inference.huggingface.co/models/distilgpt2", headers=headers, json=payload, timeout=15)
+        resp = requests.post("https://router.huggingface.co/hf-inference/models/distilgpt2", headers=headers, json=payload, timeout=15)
         
         print(f"🧪 HF: Status HTTP {resp.status_code}")
         
@@ -113,7 +111,7 @@ def testar_hf_api():
             return False
         elif resp.status_code == 503:
             print("⚠️ HF: Modelo carregando (normal)")
-            return True  # Modelo carregando é ok
+            return True  
         elif resp.status_code == 429:
             print("❌ HF: Rate limit atingido")
             return False
@@ -137,7 +135,7 @@ def testar_hf_api():
 
 import requests
 import os
-# --- CHAMAR GROQ API ---
+
 def chamar_groq_api(prompt, max_tokens=400):
     groq_key = os.getenv("GROQ_API_KEY")
     if not groq_key:
