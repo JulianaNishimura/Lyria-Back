@@ -7,7 +7,7 @@ from testeDaIa import perguntar_ollama, buscar_na_web, get_persona_texto
 from banco.banco import (
     criar_banco, criarUsuario, procurarUsuarioPorEmail,
     pegarHistorico, salvarMensagem, carregar_conversas, carregar_memorias,
-    pegarPersonaEscolhida, escolherApersona
+    pegarPersonaEscolhida, escolherApersona, deleta_conversa
 )
 from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 
@@ -38,7 +38,6 @@ app.config.update(
 
 
 def get_allowed_origins():
-    """Retorna lista de origens permitidas baseado no ambiente"""
     allowed = ["https://lyriafront.onrender.com"]
     
     if not IS_PRODUCTION:
@@ -76,7 +75,6 @@ except Exception as e:
 
 
 def verificar_login():
-    """Retorna o email do usuário logado ou None."""
     email = session.get('usuario_email')
     if email:
         print(f"✅ Usuário autenticado: {email}")
@@ -223,7 +221,19 @@ def get_conversas_logado():
     except Exception as e:
         print(f"❌ Erro em get_conversas_logado: {e}")
         return jsonify({"erro": str(e)}), 500
-
+    
+@app.route('/Lyria/conversas/<id>', methods=['DELETE'])
+def remove_conversa_id(id):
+    usuario = verificar_login()
+    if not usuario:
+        return jsonify({"erro": "Usuário não está logado"}), 401
+    
+    try:
+        deletou = deleta_conversa(id)
+        return jsonify({"sucesso": "Deletado com sucesso!"})
+    except Exception as e:
+        print(f"Erro em deletar a conversa")
+        return jsonify({"erro": str(e)}), 500
 
 @app.route('/Lyria/historico', methods=['GET'])
 def get_historico_logado():

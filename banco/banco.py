@@ -97,6 +97,15 @@ def escolherApersona(persona, usuario):
     conn.commit()
     conn.close()
 
+def deleta_conversa(id):
+    conn = psycopg2.connect(DB_URL)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM conversas WHERE id = %s", (id,))
+    cursor.execute("DELETE FROM mensagens WHERE conversa_id = %s", (id,))
+    cursor.execute("DELETE FROM user_requests WHERE conversa_id = %s", (id,))
+    conn.commit()
+    conn.close()
+
 def criarUsuario(nome, email, persona, senha_hash=None):
     conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor()
