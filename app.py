@@ -7,7 +7,7 @@ from testeDaIa import perguntar_ollama, buscar_na_web, get_persona_texto
 from banco.banco import (
     criar_banco, criarUsuario, procurarUsuarioPorEmail,
     pegarHistorico, salvarMensagem, carregar_conversas, carregar_memorias,
-    pegarPersonaEscolhida, escolherApersona, deleta_conversa
+    pegarPersonaEscolhida, escolherApersona, deleta_conversa, criar_nova_conversa
 )
 from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 
@@ -114,6 +114,20 @@ def login():
         print(traceback.format_exc())
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
 
+@app.route('/Lyria/conversas', methods=['POST'])
+def criar_nova_conversa_route():
+    usuario = verificar_login()
+    if not usuario:
+        return jsonify({"erro": "Usuário não está logado"}), 401
+    
+    try:
+        from banco.banco import criar_nova_conversa
+        conversa_id = criar_nova_conversa(usuario)
+        return jsonify({"conversa_id": conversa_id, "sucesso": "Nova conversa criada"}), 201
+    except Exception as e:
+        print(f"❌ Erro ao criar nova conversa: {e}")
+        return jsonify({"erro": str(e)}), 500
+
 @app.route('/Lyria/logout', methods=['POST'])
 def logout():
     email = session.get('usuario_email')
@@ -150,6 +164,8 @@ def conversar_logado():
 
     data = request.get_json() or {}
     pergunta = data.get('pergunta')
+    conversa_id = data.get('conversa_id')  
+    
     if not pergunta:
         return jsonify({"erro": "Campo 'pergunta' é obrigatório"}), 400
 
@@ -174,9 +190,9 @@ def conversar_logado():
         print(f"✅ Persona texto obtido: {persona_texto[:50]}..." if persona_texto else "❌ Persona texto vazio")
 
         resposta = perguntar_ollama(pergunta, conversas, memorias, persona_texto, contexto_web)
-        salvarMensagem(usuario, pergunta, resposta, modelo_usado="hf", tokens=None)
+        conversa_id_retornado = salvarMensagem(usuario, pergunta, resposta, modelo_usado="hf", tokens=None, conversa_id=conversa_id)
 
-        return jsonify({"resposta": resposta})
+        return jsonify({"resposta": resposta, "conversa_id": conversa_id_retornado})  # ✅ Retorna o ID da conversa
     except Exception as e:
         print(f"❌ Erro detalhado em conversar_logado: {str(e)}")
         import traceback

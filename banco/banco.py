@@ -157,6 +157,34 @@ def carregar_conversas(usuario_email, limite_conversas=15):
 
     return [{"conversa_id": cid, "mensagens": msgs} for cid, msgs in sorted_conversas]
 
+def criar_nova_conversa(usuario_email):
+    conn = psycopg2.connect(DB_URL)
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT id FROM usuarios WHERE email = %s
+    """, (usuario_email,))
+    
+    usuario_result = cursor.fetchone()
+    if not usuario_result:
+        conn.close()
+        raise Exception(f"Usuário com email {usuario_email} não encontrado")
+    
+    usuario_id = usuario_result[0]
+    
+    cursor.execute("""
+        INSERT INTO conversas (usuario_id, iniciado_em, atualizado_em)
+        VALUES (%s, %s, %s)
+        RETURNING id
+    """, (usuario_id, datetime.now(), datetime.now()))
+    
+    conversa_id = cursor.fetchone()[0]
+    
+    conn.commit()
+    conn.close()
+    
+    print(f"✅ Nova conversa criada com ID {conversa_id} para usuário {usuario_email}")
+    return conversa_id
 
 def carregar_memorias(usuario_email, limite=20):
     try:
@@ -213,7 +241,7 @@ def pegarHistorico(usuario_email, limite=3):
         print(f"⚠️ Erro ao carregar histórico: {e}")
         return []
     
-def salvarMensagem(usuario_email, pergunta, resposta, modelo_usado=None, tokens=None):
+def salvarMensagem(usuario_email, pergunta, resposta, modelo_usado=None, tokens=None, conversa_id=None):
     conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor()
 
@@ -228,21 +256,31 @@ def salvarMensagem(usuario_email, pergunta, resposta, modelo_usado=None, tokens=
     
     usuario_id = usuario_result[0]
 
-    cursor.execute("""
-        SELECT id FROM conversas 
-        WHERE usuario_id = %s
-        ORDER BY iniciado_em DESC LIMIT 1
-    """, (usuario_id,))
-    
-    conversa = cursor.fetchone()
-    if conversa:
+    if conversa_id:
+        cursor.execute("""
+            SELECT id FROM conversas WHERE id = %s AND usuario_id = %s
+        """, (conversa_id, usuario_id))
+        conversa = cursor.fetchone()
+        if not conversa:
+            conn.close()
+            raise Exception(f"Conversa {conversa_id} não encontrada para este usuário")
         conversa_id = conversa[0]
     else:
         cursor.execute("""
-            INSERT INTO conversas (usuario_id) VALUES (%s)
-            RETURNING id
+            SELECT id FROM conversas 
+            WHERE usuario_id = %s
+            ORDER BY iniciado_em DESC LIMIT 1
         """, (usuario_id,))
-        conversa_id = cursor.fetchone()[0]
+        
+        conversa = cursor.fetchone()
+        if conversa:
+            conversa_id = conversa[0]
+        else:
+            cursor.execute("""
+                INSERT INTO conversas (usuario_id) VALUES (%s)
+                RETURNING id
+            """, (usuario_id,))
+            conversa_id = cursor.fetchone()[0]
 
     cursor.execute("""
         INSERT INTO user_requests (usuario_id, conversa_id, conteudo)
@@ -275,4 +313,6 @@ def salvarMensagem(usuario_email, pergunta, resposta, modelo_usado=None, tokens=
 
     conn.commit()
     conn.close()
-    print(f"✅ Mensagem salva para usuário {usuario_email}")
+    print(f"✅ Mensagem salva para usuário {usuario_email} na conversa {conversa_id}")
+    
+    return conversa_id 
