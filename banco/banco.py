@@ -127,7 +127,7 @@ def procurarUsuarioPorEmail(usuarioEmail):
     conn.close()
     return dict(result) if result else None
 
-def carregar_conversas(usuario_email, limite=12):
+def carregar_conversas(usuario_email, limite_conversas=15):
     conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute("""
@@ -140,17 +140,23 @@ def carregar_conversas(usuario_email, limite=12):
         JOIN conversas c ON m.conversa_id = c.id
         JOIN usuarios u ON c.usuario_id = u.id
         WHERE u.email = %s
-        ORDER BY m.criado_em ASC
-        LIMIT %s
-    """, (usuario_email, limite))
+        ORDER BY c.iniciado_em DESC, m.criado_em ASC
+    """, (usuario_email,))
     
     results = cursor.fetchall()
     conn.close()
-    
-    return [
-        {"conversa_id": row["conversa_id"], "pergunta": row["pergunta"], "resposta": row["resposta"]}
-        for row in results
-    ] if results else []
+
+    conversas = {}
+    for row in results:
+        cid = row["conversa_id"]
+        if cid not in conversas:
+            conversas[cid] = []
+        conversas[cid].append({"pergunta": row["pergunta"], "resposta": row["resposta"]})
+
+    sorted_conversas = sorted(conversas.items(), key=lambda x: x[0], reverse=True)[:limite_conversas]
+
+    return [{"conversa_id": cid, "mensagens": msgs} for cid, msgs in sorted_conversas]
+
 
 def carregar_memorias(usuario_email, limite=20):
     try:
