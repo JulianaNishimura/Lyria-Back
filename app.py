@@ -90,17 +90,13 @@ def login():
         session['usuario_email'] = usuario['email']
         session['usuario_nome'] = usuario['nome']
         session['usuario_id'] = usuario['id']
-        
-        conversa_id = criar_nova_conversa(usuario['email'])
-        session['conversa_id'] = conversa_id
-        
+                
         session.modified = True
         
         print(f"✅ Sessão criada:")
         print(f"   Email: {session.get('usuario_email')}")
         print(f"   Nome: {session.get('usuario_nome')}")
         print(f"   ID: {session.get('usuario_id')}")
-        print(f"   Conversa ID: {conversa_id}")
         print(f"{'='*60}\n")
 
         response = jsonify({
@@ -108,7 +104,7 @@ def login():
             "mensagem": "Login realizado com sucesso",
             "usuario": usuario['nome'],
             "persona": usuario.get('persona_escolhida'),
-            "conversa_id": conversa_id
+            "conversa_id": None  # Sem conversa inicial
         })
         
         return response
@@ -178,13 +174,19 @@ def conversar_logado():
         return jsonify({"erro": "Campo 'pergunta' é obrigatório"}), 400
 
     try:
-        if not conversa_id:
-            conversa_id = session.get('conversa_id')
+        conversa_id_sessao = session.get('conversa_id')
+        
+        if not conversa_id and not conversa_id_sessao:
+            conversa_id = 1
+            print(f"🆕 Primeira conversa do usuário, usando conversa_id: {conversa_id}")
+        elif not conversa_id and conversa_id_sessao:
+            conversa_id = conversa_id_sessao
             print(f"📌 Usando conversa_id da sessão: {conversa_id}")
         else:
-            session['conversa_id'] = conversa_id
-            session.modified = True
-            print(f"📌 Atualizando sessão com conversa_id: {conversa_id}")
+            print(f"📌 Usando conversa_id recebido: {conversa_id}")
+        
+        session['conversa_id'] = conversa_id
+        session.modified = True
         
         print(f"🔍 Buscando persona para usuário: {usuario}")
         persona_tipo = pegarPersonaEscolhida(usuario)
