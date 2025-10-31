@@ -8,6 +8,7 @@ DB_URL = os.getenv("BANCO_API")
 def criar_banco():
     conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor()
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
@@ -19,6 +20,7 @@ def criar_banco():
         ultimo_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS conversas (
         id SERIAL PRIMARY KEY,
@@ -27,9 +29,10 @@ def criar_banco():
         iniciado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         status TEXT,
-        FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
     );
     """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS user_requests (
         id SERIAL PRIMARY KEY,
@@ -37,10 +40,11 @@ def criar_banco():
         conversa_id INTEGER NOT NULL,
         conteudo TEXT NOT NULL,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(usuario_id) REFERENCES usuarios(id),
-        FOREIGN KEY(conversa_id) REFERENCES conversas(id)
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+        FOREIGN KEY (conversa_id) REFERENCES conversas(id) ON DELETE CASCADE
     );
     """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS ai_responses (
         id SERIAL PRIMARY KEY,
@@ -49,9 +53,10 @@ def criar_banco():
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         modelo_usado TEXT,
         tokens INTEGER,
-        FOREIGN KEY(request_id) REFERENCES user_requests(id)
-    );    
+        FOREIGN KEY (request_id) REFERENCES user_requests(id) ON DELETE CASCADE
+    );
     """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS mensagens (
         id SERIAL PRIMARY KEY,
@@ -59,11 +64,12 @@ def criar_banco():
         request_id INTEGER NOT NULL,
         response_id INTEGER NOT NULL,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(conversa_id) REFERENCES conversas(id),
-        FOREIGN KEY(request_id) REFERENCES user_requests(id),
-        FOREIGN KEY(response_id) REFERENCES ai_responses(id)
+        FOREIGN KEY (conversa_id) REFERENCES conversas(id) ON DELETE CASCADE,
+        FOREIGN KEY (request_id) REFERENCES user_requests(id) ON DELETE CASCADE,
+        FOREIGN KEY (response_id) REFERENCES ai_responses(id) ON DELETE CASCADE
     );
     """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS memorias (
         id SERIAL PRIMARY KEY,
@@ -76,9 +82,11 @@ def criar_banco():
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         expira_em TIMESTAMP,
-        FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+        FOREIGN KEY (conversa_origem) REFERENCES conversas(id) ON DELETE CASCADE
     );
     """)
+
     conn.commit()
     conn.close()
 
@@ -100,15 +108,7 @@ def escolherApersona(persona, usuario):
 def deleta_conversa(id):
     conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor()
-
-    cursor.execute("SELECT id FROM user_requests WHERE conversa_id = %s", (id,))
-    idRequest = cursor.fetchone()
-
-    cursor.execute("DELETE FROM ai_responses WHERE request_id = %s", (idRequest,))
-    cursor.execute("DELETE FROM user_requests WHERE conversa_id = %s", (id,))
-    cursor.execute("DELETE FROM mensagens WHERE conversa_id = %s", (id,))
     cursor.execute("DELETE FROM conversas WHERE id = %s", (id,))
-    
     conn.commit()
     conn.close()
 
