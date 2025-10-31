@@ -102,7 +102,12 @@ def deleta_conversa(id):
     cursor = conn.cursor()
     cursor.execute("DELETE FROM conversas WHERE id = %s", (id,))
     cursor.execute("DELETE FROM mensagens WHERE conversa_id = %s", (id,))
+
+    cursor.execute("SELECT id FROM user_requests WHERE conversa_id = %s", (id,))
+    idRequest = cursor.fetchone()
+
     cursor.execute("DELETE FROM user_requests WHERE conversa_id = %s", (id,))
+    cursor.execute("DELETE FROM ai_responses WHERE request_id = %s", (idRequest,))
     conn.commit()
     conn.close()
 
