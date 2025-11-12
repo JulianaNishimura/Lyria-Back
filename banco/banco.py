@@ -17,7 +17,9 @@ def criar_banco():
         senha_hash TEXT,
         persona_escolhida TEXT,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        ultimo_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ultimo_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        token_redefinicao_senha TEXT,
+        token_redefinicao_expiracao TIMESTAMP
     );
     """)
 
@@ -132,6 +134,36 @@ def procurarUsuarioPorEmail(usuarioEmail):
     result = cursor.fetchone()
     conn.close()
     return dict(result) if result else None
+
+def salvar_token_redefinicao(email, token, expiracao):
+    conn = psycopg2.connect(DB_URL)
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE usuarios
+        SET token_redefinicao_senha = %s, token_redefinicao_expiracao = %s
+        WHERE email = %s
+    """, (token, expiracao, email))
+    conn.commit()
+    conn.close()
+
+def procurarUsuarioPorToken(token):
+    conn = psycopg2.connect(DB_URL)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cursor.execute("SELECT * FROM usuarios WHERE token_redefinicao_senha = %s", (token,))
+    result = cursor.fetchone()
+    conn.close()
+    return dict(result) if result else None
+
+def atualizar_senha(token, nova_senha_hash):
+    conn = psycopg2.connect(DB_URL)
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE usuarios
+        SET senha_hash = %s, token_redefinicao_senha = NULL, token_redefinicao_expiracao = NULL
+        WHERE token_redefinicao_senha = %s
+    """, (nova_senha_hash, token))
+    conn.commit()
+    conn.close()
 
 def carregar_conversas(usuario_email, limite_conversas=15):
     conn = psycopg2.connect(DB_URL)
