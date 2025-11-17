@@ -195,6 +195,24 @@ def carregar_conversas(usuario_email, limite_conversas=15):
 
     return [{"conversa_id": cid, "mensagens": msgs} for cid, msgs in sorted_conversas]
 
+def carregar_mensagens_por_conversa_id(conversa_id):
+    conn = psycopg2.connect(DB_URL)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cursor.execute("""
+        SELECT ur.conteudo AS pergunta,
+               ar.conteudo AS resposta
+        FROM mensagens m
+        JOIN user_requests ur ON m.request_id = ur.id
+        JOIN ai_responses ar ON m.response_id = ar.id
+        WHERE m.conversa_id = %s
+        ORDER BY m.criado_em ASC
+    """, (conversa_id,))
+    
+    results = cursor.fetchall()
+    conn.close()
+    
+    return [{"pergunta": row["pergunta"], "resposta": row["resposta"]} for row in results]
+
 def criar_nova_conversa(usuario_email):
     conn = psycopg2.connect(DB_URL)
     cursor = conn.cursor()

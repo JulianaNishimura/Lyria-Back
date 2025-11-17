@@ -12,7 +12,8 @@ from banco.banco import (
     criar_banco, criarUsuario, procurarUsuarioPorEmail,
     pegarHistorico, salvarMensagem, carregar_conversas, carregar_memorias,
     pegarPersonaEscolhida, escolherApersona, deleta_conversa, criar_nova_conversa,
-    salvar_token_redefinicao, procurarUsuarioPorToken, atualizar_senha
+    salvar_token_redefinicao, procurarUsuarioPorToken, atualizar_senha,
+    carregar_mensagens_por_conversa_id
 )
 from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 
@@ -163,60 +164,33 @@ def conversar_sem_conta():
 
 @app.route('/Lyria/conversar-logado', methods=['POST'])
 def conversar_logado():
-    print(f"📋 Sessão recebida: {dict(session)}")
-    print(f"🍪 Cookies recebidos: {dict(request.cookies)}")
-    
     usuario = verificar_login()
     if not usuario:
-        print("❌ Tentativa de acesso não autorizado em /conversar-logado")
         return jsonify({"erro": "Usuário não está logado"}), 401
 
     data = request.get_json() or {}
     pergunta = data.get('pergunta')
-    conversa_id = data.get('conversa_id')  
-    
-    if not pergunta:
-        return jsonify({"erro": "Campo 'pergunta' é obrigatório"}), 400
+    conversa_id = data.get('conversa_id')
+
+    if not pergunta or not conversa_id:
+        return jsonify({"erro": "Campos 'pergunta' e 'conversa_id' são obrigatórios"}), 400
 
     try:
-        conversa_id_sessao = session.get('conversa_id')
-        
-        if not conversa_id and not conversa_id_sessao:
-            conversa_id = 1
-            print(f"🆕 Primeira conversa do usuário, usando conversa_id: {conversa_id}")
-        elif not conversa_id and conversa_id_sessao:
-            conversa_id = conversa_id_sessao
-            print(f"📌 Usando conversa_id da sessão: {conversa_id}")
-        else:
-            print(f"📌 Usando conversa_id recebido: {conversa_id}")
-        
-        session['conversa_id'] = conversa_id
-        session.modified = True
-        
-        print(f"🔍 Buscando persona para usuário: {usuario}")
+        print(f"📌 Usando conversa_id recebido do frontend: {conversa_id}")
+
         persona_tipo = pegarPersonaEscolhida(usuario)
         if not persona_tipo:
             return jsonify({"erro": "Usuário não tem persona definida"}), 400
-
-        print(f"📚 Carregando conversas para usuário: {usuario}")
-        conversas = carregar_conversas(usuario)
-        print(f"✅ Conversas carregadas: {len(conversas) if conversas else 0}")
         
-        print(f"🧠 Carregando memórias para usuário: {usuario}")
+        historico_conversa = carregar_mensagens_por_conversa_id(conversa_id)
+        print(f"🧠 Histórico da conversa ({conversa_id}) carregado para a IA: {historico_conversa}")
         memorias = carregar_memorias(usuario)
-        print(f"✅ Memórias carregadas: {len(memorias) if memorias else 0}")
-        
         contexto_web = buscar_na_web(pergunta) if deve_buscar_na_web(pergunta) else None
-        
-        print(f"🎭 Obtendo texto da persona: {persona_tipo}")
         persona_texto = get_persona_texto(persona_tipo)
-        print(f"✅ Persona texto obtido: {persona_texto[:50]}..." if persona_texto else "❌ Persona texto vazio")
 
-        resposta = perguntar_ollama(pergunta, conversas, memorias, persona_texto, contexto_web)
+        resposta = perguntar_ollama(pergunta, historico_conversa, memorias, persona_texto, contexto_web)
+        
         conversa_id_retornado = salvarMensagem(usuario, pergunta, resposta, modelo_usado="hf", tokens=None, conversa_id=conversa_id)
-
-        session['conversa_id'] = conversa_id_retornado
-        session.modified = True
 
         return jsonify({"resposta": resposta, "conversa_id": conversa_id_retornado})
     except Exception as e:
