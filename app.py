@@ -20,12 +20,14 @@ from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
 
+IS_PRODUCTION = bool(os.environ.get('RENDER'))
+
 app.config.update(
     SESSION_TYPE='filesystem',
     SESSION_COOKIE_NAME='lyria_session',
-    SESSION_COOKIE_SAMESITE='None',   
+    SESSION_COOKIE_SAMESITE='None' if IS_PRODUCTION else 'Lax',
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SECURE=True,       
+    SESSION_COOKIE_SECURE=IS_PRODUCTION,
     SESSION_COOKIE_PATH='/',
     PERMANENT_SESSION_LIFETIME=604800
 )
@@ -45,8 +47,10 @@ CORS(
     origins=allowed_origins,
     allow_headers=["Content-Type", "Authorization"],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    expose_headers=["Set-Cookie"]
+    expose_headers=["Set-Cookie"],
+    max_age=3600
 )
+
 try:
     criar_banco()
     print("✅ Tabelas criadas/verificadas com sucesso!")
