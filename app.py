@@ -20,16 +20,13 @@ from classificadorDaWeb.classificador_busca_web import deve_buscar_na_web
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
 
-IS_PRODUCTION = os.environ.get('RENDER', False)
-
 app.config.update(
-    SESSION_TYPE='filesystem',  
+    SESSION_TYPE='filesystem',
     SESSION_COOKIE_NAME='lyria_session',
-    SESSION_COOKIE_SAMESITE='None' if IS_PRODUCTION else 'Lax',
+    SESSION_COOKIE_SAMESITE='None',   
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SECURE=IS_PRODUCTION,
+    SESSION_COOKIE_SECURE=True,       
     SESSION_COOKIE_PATH='/',
-    SESSION_COOKIE_DOMAIN=None,  
     PERMANENT_SESSION_LIFETIME=604800
 )
 
@@ -38,22 +35,18 @@ Session(app)
 allowed_origins = [
     "http://localhost:5173",
     "http://localhost:3000",
-    "http://10.110.12.20:5173"
+    "http://10.110.12.20:5173",
+    "https://lyriafront.onrender.com"
 ]
 
-if IS_PRODUCTION:
-    allowed_origins.append("https://lyriafront.onrender.com")
-
-CORS(app, 
-    resources={r"/*": {
-        "origins": allowed_origins,
-        "allow_headers": ["Content-Type", "Authorization"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "supports_credentials": True,
-        "expose_headers": ["Set-Cookie"]
-    }}
+CORS(
+    app,
+    supports_credentials=True,
+    origins=allowed_origins,
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    expose_headers=["Set-Cookie"]
 )
-
 try:
     criar_banco()
     print("✅ Tabelas criadas/verificadas com sucesso!")
